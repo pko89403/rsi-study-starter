@@ -77,13 +77,13 @@ rollback은 없다. 모든 patch가 commit으로 남고, 다음 round는 `select
 
 ## 4. method를 넣는 법
 
-1. `hooks/` 안의 함수 하나(또는 둘)의 본문을 바꾼다. 시그니처는 그대로. 10개 어디에도 안 들어가는 method면 `loop/run.py`를 고쳐도 된다 (아래 6).
+1. `hooks/` 안의 함수 하나(또는 둘)의 본문을 바꾼다. 시그니처는 그대로. hook에 안 들어가는 method는 아래 6의 B·C.
 2. `config.yaml`의 `hook_changed`에 바꾼 hook 이름을, `week`에 주차를 적는다.
 3. `make round N=20`
 4. `make test`, `make results W=N` 으로 결과 표를 채운다.
 
 hook 안에서 할 수 있는 것: `ctx` 읽기, `logs/` 아래 파일 읽고 쓰기, `ctx.llm(messages, role="improver")`로 LLM 추가 호출(호출 수는 결과 표 "비용"에).
-하면 안 되는 것: `data/test.json` 열기, `sql_agent/run.py`를 직접 고치기(SQL agent 변경은 patch 경로로만), `loop/`·`evaluator/` 고치기. loop는 hook을 검사하지 않으므로 규칙으로만 지킨다.
+하면 안 되는 것: `data/test.json` 열기, `sql_agent/run.py`의 EVOLVE-BLOCK을 사람이 고치기(SQL agent 변경은 patch 경로로만), `loop/run.py` 밖의 `loop/`·`evaluator/` 고치기. loop는 hook을 검사하지 않으므로 규칙으로만 지킨다.
 
 예: Reflexion = `after_eval`에서 거부된 patch의 이유를 `logs/playbook.md`에 적고, `build_prompt`가 그 파일을 읽어 prompt에 넣는다.
 
@@ -103,7 +103,21 @@ starter에는 EVOLVE-BLOCK 세 개(`prompt`, `code`, `evaluator`)가 이미 들�
 4. test 결과를 loop의 입력으로 쓰지 않는다
 5. `logs/rounds.jsonl` 한 줄의 필드 (`scripts/results.py`가 읽는다)
 
-나머지는 자유다. method가 hook 10개 중 하나에 들어가면 그 함수만 바꾸고, 안 들어가면 `loop/run.py`를 고친다. 고친 것은 결과 표 "전제 조건"에 적는다. 1~5번도 코드가 막지 않는다. 규칙으로 지킨다.
+나머지는 자유다. 1~5번은 코드가 막지 않는다. 규칙으로 지킨다.
+
+method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 아래 넷 중 하나다.
+
+| 경우 | 예 | 하는 법 | 기록 |
+|---|---|---|---|
+| A. 새 모듈을 hook에서 부름 | few-shot을 유사도로 고르는 retriever, playbook 관리 클래스 | `methods/retriever.py` 같은 파일을 만들고 `hooks/build_prompt.py`에서 import | `hook_changed`에 hook 이름. "전제 조건"에 파일명 |
+| B. loop에 단계가 하나 더 필요 | screen과 full 사이에 LLM 검증자, patch 두 개를 짝지어 비교, parent 여러 개를 두는 population | `loop/run.py`의 graph에 노드·엣지 추가. `rounds.jsonl` 필드는 지우거나 이름 바꾸지 않음(추가는 됨) | "전제 조건"에 "`loop/run.py`에 X 노드 추가" |
+| C. SQL agent에 새 부품이 필요 | 스키마 검색기, 새 도구(`run_sql` 말고 `explain_sql`) | `sql_agent/tools.py`처럼 EVOLVE-BLOCK 밖에 helper를 만들고, `sql_agent/run.py` 위쪽에 import 한 줄 + `hooks/build_prompt.py`의 `CONTRACTS["code"]` 이름 목록에 등록. Improver가 그것을 쓰는 patch를 내게 함 | SQL agent 기준선이 바뀌므로 "전" 점수를 다시 잼. "전제 조건"에 명시 |
+| D. 평가 조건 5개를 바꿔야 함 | validation 문제 교체, test 채점 규칙 변경, 모델 교체, `rounds.jsonl` 필드 삭제 | 안 됨. 그 주 표에 다른 사람과 나란히 놓을 수 없음 | 하고 싶으면 표 밖에 "참고 실험"으로 따로 적음 |
+
+A가 대부분이고, B가 가끔, C는 드물다. D만 막혀 있다.
+- C의 선: 사람이 SQL agent를 고치는 것과 Improver가 고치는 것을 섞지 않는다. helper 추가(사람)는 SQL agent 기준선을 바꾸는 변경이고, 그 helper를 쓰는 graph를 짜는 것(Improver)이 method 효과다. 전자는 "전" 점수 재측정으로 분리하고, 후자만 표의 전/후 차이로 읽는다. helper를 추가하면서 `build_graph` 본문까지 사람이 바꾸면 이 분리가 깨진다.
+- hook이 못 하는 것: 단계 사이에 끼어들기, 단계 순서 바꾸기, 여러 SQL agent를 동시에 유지하기(population), SQL agent가 쓸 수 있는 이름 늘리기. 이것들이 B·C다.
+- 가중치를 학습하는 method(self-reward, STaR 등 Training-time)는 모델이 고정이라 그대로는 안 된다. in-context 버전(맞춘 예시를 pool에 쌓기, self-play 문제 생성 노드)으로 바꿔 체험하고 "전제 조건"에 적는다.
 ## 7. 결과 표
 
 매주 같은 6칸(validation 전/후 · test 전/후 · 비용 · 실패 유형 · 전제 조건 · 서비스에 넣는다면)을 적는다. 칸별 설명과 읽는 법은 위키 [결과 표](https://github.com/pko89403/rsi-study-starter/wiki/결과-표).
