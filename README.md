@@ -24,6 +24,8 @@ python -m loop.run --rounds 1                   # 1 round. logs/rounds.jsonl 에
 
 ## 2. 폴더
 
+![구성도: Improver(loop + hooks)가 SQL agent의 열린 블록을 고치고, evaluator가 validation으로 채점한다. test는 loop 밖](docs/structure.png)
+
 | 경로 | 하는 일 | 누가 고치나 |
 |---|---|---|
 | `sql_agent/run.py` | SQL agent CLI. `prompt` 블록(system prompt, few-shot 선택)과 `code` 블록(`generate`: ask·run_sql로 생성→실행→수정)만 Improver가 고침 | Improver (열린 블록 안) |
@@ -41,6 +43,8 @@ python -m loop.run --rounds 1                   # 1 round. logs/rounds.jsonl 에
 ## 3. 한 round와 hook 10개
 
 loop는 round마다 아래 순서로 돌고, 번호 붙은 곳에서 `hooks/`의 함수를 부른다. 함수 이름·인자·반환은 고정이고 본문만 바꾼다.
+
+![한 round의 흐름과 hook 10개의 위치](docs/round.png)
 
 ```
 parent = select_parent(archive)                 ① 어느 commit에서 시작하나        기본: 최고 점수 commit
@@ -80,6 +84,8 @@ hook 안에서 할 수 있는 것: `ctx` 읽기, `logs/` 아래 파일 읽고 �
 
 starter에는 블록 세 개가 이미 들어 있다. `config.yaml`의 `open_blocks`에 이름을 더하면 Improver가 그 블록을 고칠 수 있다.
 무엇을 언제 열지는 발제자의 method 제안에 따른다. 아래는 Survey의 축(prompt → 코드 → 데이터 → 채점 기준 → 탐색 → 목표)을 따른 예다.
+
+![주차별 흐름: 발제자가 method를 제안하고 각자 구현해 hook에 넣는다](docs/week.png)
 
 | 주차 | 여는 것 (예) | 하는 법 |
 |---|---|---|
