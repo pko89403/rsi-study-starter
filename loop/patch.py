@@ -67,9 +67,9 @@ def locate(files: list[str], name: str) -> Path | None:
     return None
 
 
-def guard(patch: Patch, open_blocks: list[str]) -> str | None:
+def guard(patch: Patch, editable_blocks: list[str]) -> str | None:
     """거부 사유 문자열, 통과면 None."""
-    if patch.block not in open_blocks:
+    if patch.block not in editable_blocks:
         return f"block '{patch.block}' not open"
     for bad in FORBIDDEN:
         if bad in patch.content:

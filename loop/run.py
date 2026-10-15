@@ -104,8 +104,8 @@ def main() -> None:
         archive.record(parent, before["correct"], None)
         if archive.best is None:
             archive.set_best(parent)
-        block_name = cfg["open_blocks"][0]
-        blocks = {b: P.read_block(P.locate(evolve_files, b), b) for b in cfg["open_blocks"]}
+        block_name = cfg["editable_blocks"][0]
+        blocks = {b: P.read_block(P.locate(evolve_files, b), b) for b in cfg["editable_blocks"]}
         ctx = RoundContext(round=rnd, week=cfg["week"], config=cfg, parent=parent, block_name=block_name,
                            block=blocks[block_name], blocks=blocks, before=before,
                            problems={p["id"]: p for p in problems}, predictions=preds, llm=llm.chat,
@@ -126,7 +126,7 @@ def main() -> None:
             pt = review_patch(ctx, pt)
             if pt is None:
                 entry["rejected_by"] = "review"; entry["reason"] += " | rejected by review_patch"; break
-            why = P.guard(pt, cfg["open_blocks"])
+            why = P.guard(pt, cfg["editable_blocks"])
             if why:
                 entry["rejected_by"] = "guard"; entry["reason"] = f"{pt.reason} | {why}"; dump_patch(rnd, pt, why); break
             target = P.locate(evolve_files, pt.block)

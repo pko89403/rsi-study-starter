@@ -12,7 +12,7 @@ class RoundContext:
     config: dict
     parent: str
     block_name: str
-    block: str                        # open_blocks[0]의 현재 내용
+    block: str                        # editable_blocks[0]의 현재 내용
     before: dict                      # evaluate() 결과
     problems: dict                    # id -> problem (gold 포함, loop만 봄)
     predictions: dict                 # id -> sql (before 실행)
