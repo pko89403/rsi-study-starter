@@ -107,12 +107,12 @@ starter에는 블록 세 개가 이미 들어 있다. `config.yaml`의 `open_blo
 5. `logs/rounds.jsonl` 한 줄의 필드 (`scripts/results.py`가 읽는다)
 
 나머지는 자유다. method가 hook 10개 중 하나에 들어가면 그 함수만 바꾸고(지름길), 안 들어가면 `loop/run.py`를 고친다. 고친 것은 결과 표 "전제 조건"에 적는다. 1~5번도 코드가 막지 않는다. 규칙으로 지킨다.
-## 6. 결과 표 (매주 같은 칸)
+## 7. 결과 표 (매주 같은 칸)
 
 validation 전/후 · test 전/후(3회 평균) · 비용(LLM 호출 수, 시간) · 실패 유형 · 전제 조건 · 서비스에 넣는다면(넣음/조건부/안 넣음 + 이유)
 앞 두 칸은 `scripts/results.py`, `scripts/test_eval.py`가 뽑는다.
 
-## 7. 자주 막히는 곳
+## 8. 자주 막히는 곳
 - LM Studio: Developer 탭에서 서버를 켜고 모델을 로드한 뒤, `curl http://localhost:1234/v1/models` 에 나오는 id를 `LLM_MODEL`에 쓴다.
 - agent timeout: `config.yaml`의 `agent_timeout_sec`(기본 1800초). 100문제 × 모델 속도.
 - 점수가 전혀 안 움직이면 `temperature`는 0으로 고정돼 있으니 Improver 모델을 더 큰 것으로 바꿔 본다.
