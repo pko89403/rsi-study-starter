@@ -1,0 +1,15 @@
+rounds: 20
+week: 0
+validation: data/validation.json
+fewshot_pool: data/fewshot_pool.json
+tables: data/tables.json
+db_dir: data/database
+screen_size: 20
+noise_margin: 3          # 문제 수. accept 기본 규칙
+screen_drop: 2           # screen에서 이만큼 떨어지면 거부
+agent_timeout_sec: 1800
+sql_timeout_sec: 5
+open_blocks: [prompt]    # Improver가 고칠 수 있는 블록. 4주차 예: [prompt, code], 6주차 예: [prompt, code, evaluator]
+evolve_files: [sql_agent/run.py, evaluator/rules.py]   # 블록이 들어 있는 파일
+log: logs/rounds.jsonl
+hook_changed: none       # 이번 주에 바꾼 hook 이름 (결과 표용)
