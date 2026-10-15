@@ -96,14 +96,14 @@ starter에는 EVOLVE-BLOCK 세 개(`prompt`, `code`, `evaluator`)가 이미 들�
 
 ## 6. 고정인 것과 자유인 것
 
-같아야 하는 것은 **자(측정 도구)**다. 이것만 지키면 사람마다 다른 Improver를 같은 표에 놓을 수 있다.
+전원이 같게 유지하는 것은 아래 **평가 조건 5개**다. 이것만 지키면 사람마다 다른 Improver를 같은 표에 놓을 수 있다.
 1. 데이터: `data/validation.json`·`test.json`·`fewshot_pool.json` (6주차 전까지)
 2. test 채점: `scripts/test_eval.py` + `evaluator/rules_v0.py`
 3. 모델: Qwen2.5-7B-Instruct, temperature 0
-4. test는 loop에 되먹이지 않는다
+4. test 결과를 loop의 입력으로 쓰지 않는다
 5. `logs/rounds.jsonl` 한 줄의 필드 (`scripts/results.py`가 읽는다)
 
-나머지는 자유다. method가 hook 10개 중 하나에 들어가면 그 함수만 바꾸고(지름길), 안 들어가면 `loop/run.py`를 고친다. 고친 것은 결과 표 "전제 조건"에 적는다. 1~5번도 코드가 막지 않는다. 규칙으로 지킨다.
+나머지는 자유다. method가 hook 10개 중 하나에 들어가면 그 함수만 바꾸고, 안 들어가면 `loop/run.py`를 고친다. 고친 것은 결과 표 "전제 조건"에 적는다. 1~5번도 코드가 막지 않는다. 규칙으로 지킨다.
 ## 7. 결과 표
 
 매주 같은 6칸(validation 전/후 · test 전/후 · 비용 · 실패 유형 · 전제 조건 · 서비스에 넣는다면)을 적는다. 칸별 설명과 읽는 법은 위키 [결과 표](https://github.com/pko89403/rsi-study-starter/wiki/결과-표).
