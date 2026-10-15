@@ -2,6 +2,7 @@
 
 각자 **SQL agent**(질문 → SQL)와 그것을 고치는 **Improver**(loop + Improver LLM + hook 10개)를 가지고, 매주 발제 논문의 method를
 hook 하나에 넣어 돌려 본 뒤 같은 양식으로 경험을 적는다. 이 repo는 그 최소 형태다.
+설계 이유·데이터 형식·주차별 로드맵 같은 배경은 [위키](https://github.com/pko89403/rsi-study-starter/wiki)에 있다.
 
 ![starter의 두 구성 요소: SQL agent는 문제를 풀고, Improver는 그 점수를 보고 EVOLVE-BLOCK을 고친다](docs/components.png)
 
@@ -91,36 +92,7 @@ hook 안에서 할 수 있는 것: `ctx` 읽기, `logs/` 아래 파일 읽고 �
 ## 5. 주차별로 `editable_blocks`에 추가하는 것
 
 starter에는 EVOLVE-BLOCK 세 개(`prompt`, `code`, `evaluator`)가 이미 들어 있다. `config.yaml`의 `editable_blocks`에 이름을 더하면 Improver가 그 블록을 고칠 수 있다.
-무엇을 언제 열지는 발제자의 method 제안에 따른다. 아래는 Survey의 축(prompt → 코드 → 데이터 → 채점 기준 → 탐색 → 목표)을 따른 예다.
-
-![주차별 흐름: 발제자가 method를 제안하고 각자 구현해 hook에 넣는다](docs/week.png)
-
-| 주차 | Improver가 수정하는 대상 (예) | 하는 법 |
-|---|---|---|
-| v0 | `prompt` EVOLVE-BLOCK | 기본 `editable_blocks: [prompt]` |
-| 3 | Improver의 playbook | `after_eval`이 `logs/playbook.md`에 적고 `build_prompt`가 읽음 |
-| 4 | `code` EVOLVE-BLOCK (SQL agent graph에 `run_sql`로 실행해 보고 고치는 노드 추가) | `editable_blocks: [prompt, code]` |
-| 5 | few-shot pool 축적 | `after_eval`이 맞춘 (질문, SQL)을 pool에 추가 |
-| 6 | `evaluator` EVOLVE-BLOCK (validation 문제 선택·비교 규칙) | `editable_blocks: [prompt, code, evaluator]`, `accept`를 정합성 검사로. test 채점은 `rules_v0.py`(고정)라 영향 없음 |
-| 7 | 탐색 | `propose`를 best-of-K, `select_parent`를 가중 선택으로 |
-| 8 | goal | `loop/prompts/patch.md`의 Goal을 "점수를 올려라"로 바꾸고 guard 거부 횟수를 셈 |
-
-4주차 `code` 블록이 될 수 있는 모양 (실행해 보고 오류면 최대 2번 고침). v0는 `generate` 노드 하나다.
-```python
-def build_graph(g, ask, run_sql):
-    def generate(s):
-        return {"sql": extract_sql(ask(build_messages(s["question"], s["schema"], s["fewshot"]))), "attempts": 0}
-    def check(s):
-        return {"result": run_sql(s["sql"])}
-    def fix(s):
-        msgs = build_messages(s["question"], s["schema"], s["fewshot"]) + [
-            {"role": "assistant", "content": s["sql"]},
-            {"role": "user", "content": f"Error: {s['result']['error']}. Return a corrected SQL query only."}]
-        return {"sql": extract_sql(ask(msgs)), "attempts": s["attempts"] + 1}
-    g.add_node("generate", generate); g.add_node("check", check); g.add_node("fix", fix)
-    g.add_edge(START, "generate"); g.add_edge("generate", "check"); g.add_edge("fix", "check")
-    g.add_conditional_edges("check", lambda s: END if s["result"]["ok"] or s["attempts"] >= 2 else "fix")
-```
+주차별 예와 4주차 `code` 블록(LangGraph `build_graph`) 예는 위키 [주차별 로드맵](https://github.com/pko89403/rsi-study-starter/wiki/주차별-로드맵)에 있다.
 
 ## 6. 고정인 것과 자유인 것
 
@@ -132,12 +104,11 @@ def build_graph(g, ask, run_sql):
 5. `logs/rounds.jsonl` 한 줄의 필드 (`scripts/results.py`가 읽는다)
 
 나머지는 자유다. method가 hook 10개 중 하나에 들어가면 그 함수만 바꾸고(지름길), 안 들어가면 `loop/run.py`를 고친다. 고친 것은 결과 표 "전제 조건"에 적는다. 1~5번도 코드가 막지 않는다. 규칙으로 지킨다.
-## 7. 결과 표 (매주 같은 칸)
+## 7. 결과 표
 
-validation 전/후 · test 전/후(3회 평균) · 비용(LLM 호출 수, 시간) · 실패 유형 · 전제 조건 · 서비스에 넣는다면(넣음/조건부/안 넣음 + 이유)
-앞 두 칸은 `scripts/results.py`, `scripts/test_eval.py`가 뽑는다.
+매주 같은 6칸(validation 전/후 · test 전/후 · 비용 · 실패 유형 · 전제 조건 · 서비스에 넣는다면)을 적는다. 칸별 설명과 읽는 법은 위키 [결과 표](https://github.com/pko89403/rsi-study-starter/wiki/결과-표).
 
 ## 8. 자주 막히는 곳
-- LM Studio: Developer 탭에서 서버를 켜고 모델을 로드한 뒤, `curl http://localhost:1234/v1/models` 에 나오는 id를 `LLM_MODEL`에 쓴다.
+- LM Studio: 서버를 켜고 모델을 로드한 뒤, `curl http://localhost:1234/v1/models` 에 나오는 id를 `LLM_MODEL`에 쓴다. 모델 받는 법부터는 위키 [로컬 LM Studio](https://github.com/pko89403/rsi-study-starter/wiki/로컬-LM-Studio).
 - agent timeout: `config.yaml`의 `agent_timeout_sec`(기본 1800초). 100문제 × 모델 속도.
 - 점수가 전혀 안 움직이면 `temperature`는 0으로 고정돼 있으니 Improver 모델을 더 큰 것으로 바꿔 본다.
