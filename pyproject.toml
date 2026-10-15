@@ -1,0 +1,14 @@
+[project]
+name = "rsi-study-starter"
+version = "0.1.0"
+description = "Text-to-SQL agent와 Improver loop (RSI 논문 스터디)"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0",
+    "gitpython>=3.1",
+    "pyyaml>=6",
+    "langgraph>=1.0",
+]
+
+[tool.uv]
+package = false

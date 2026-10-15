@@ -11,10 +11,14 @@ CONTRACTS = {
   You do NOT need to read any file. Never use open(), os, subprocess, or imports inside the block.
 - build_messages must return a list of chat messages (dicts with "role" and "content").
 - The model answering is small (7B); keep the prompt short and concrete.""",
-    "code": """Block 'code' (sql_agent/run.py): def generate(question, schema, db_id, fewshot, ask, run_sql) -> str
+    "code": """Block 'code' (sql_agent/run.py): def build_graph(g, ask, run_sql) -> None. It adds LangGraph nodes and edges to g.
+- g is a StateGraph over AgentState with keys: question, schema, db_id, fewshot, sql (the answer read at END), result, attempts.
+  A node is def node(s) -> dict that returns only the keys it updates.
+- Use g.add_node(name, node), g.add_edge(a, b), g.add_conditional_edges(a, route) where route(s) returns a node name or END.
+  Names available without import: START, END, AgentState, build_messages, extract_sql.
 - ask(messages) -> str calls the LLM. run_sql(sql) -> {"ok": bool, "rows": [...], "error": str|None} executes sql
-  read-only on this problem's database (it does not know the gold answer). build_messages and extract_sql are available.
-- Return one SQL string. You may call ask/run_sql several times (e.g. generate, run, fix on error). Keep it under ~40 lines.""",
+  read-only on this problem's database (it does not know the gold answer).
+- The graph must reach END; it is cut after 12 steps. Keep it under ~40 lines.""",
     "evaluator": """Block 'evaluator' (evaluator/rules.py): select_problems(problems) -> list and compare(pred_rows, gold_rows, gold_sql) -> bool
 - These define how validation is scored. Changing them changes the score itself; the held-out test uses a frozen copy.""",
 }

@@ -1,3 +1,0 @@
-openai>=1.0
-gitpython>=3.1
-pyyaml>=6

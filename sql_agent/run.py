@@ -1,13 +1,27 @@
-"""SQL agent. 사용법: python -m sql_agent.run --problems p.json --out o.jsonl
-입력 문제에는 gold_sql이 없다. 출력은 한 줄에 {"id","sql"}."""
+"""SQL agent (LangGraph). 사용법: python -m sql_agent.run --problems p.json --out o.jsonl
+입력 문제에는 gold_sql이 없다. 출력은 한 줄에 {"id","sql"}.
+문제 하나 = graph 한 번 실행. graph의 노드·엣지는 `code` 블록의 build_graph가 정한다."""
 from __future__ import annotations
 import argparse, json, os, re, sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import TypedDict
+from langgraph.graph import StateGraph, START, END
 from sql_agent import llm
 from sql_agent.schema import schema_text
 
 DATA_DIR = Path(os.environ.get("STARTER_DATA_DIR", "data"))
+MAX_STEPS = 12   # graph가 END에 못 가고 맴돌 때 자르는 단계 수
+
+
+class AgentState(TypedDict, total=False):
+    question: str
+    schema: str
+    db_id: str
+    fewshot: list[dict]
+    sql: str          # 답. END에서 이 값을 낸다
+    result: dict      # 마지막 run_sql 결과 {"ok","rows","error"}
+    attempts: int
 
 
 def try_sql(db_id: str, sql: str, limit: int = 5) -> dict:
@@ -47,11 +61,24 @@ def extract_sql(text: str) -> str:
 
 
 # === EVOLVE-BLOCK-START: code ===
-def generate(question: str, schema: str, db_id: str, fewshot: list[dict], ask: "callable", run_sql: "callable") -> str:
-    """질문 하나 → SQL 하나. ask(messages) -> str 는 LLM 호출, run_sql(sql) -> {"ok","rows","error"} 는 이 문제의 DB에서 실행.
-    v0: LLM 한 번. 4주차부터 '생성 → run_sql로 확인 → 오류면 고쳐서 다시' 같은 단계를 여기 짤 수 있다."""
-    return extract_sql(ask(build_messages(question, schema, fewshot)))
+def build_graph(g: StateGraph, ask, run_sql) -> None:
+    """g(AgentState graph)에 노드·엣지를 더한다. ask(messages) -> str 는 LLM 호출,
+    run_sql(sql) -> {"ok","rows","error"} 는 이 문제의 DB에서 실행. 노드는 s -> 바뀐 key만 담은 dict.
+    v0: generate 노드 하나. 4주차부터 '생성 → run_sql로 확인 → 오류면 고쳐서 다시' 같은 노드·조건부 엣지를 여기 짤 수 있다."""
+    def generate(s: AgentState) -> dict:
+        return {"sql": extract_sql(ask(build_messages(s["question"], s["schema"], s["fewshot"])))}
+    g.add_node("generate", generate)
+    g.add_edge(START, "generate")
+    g.add_edge("generate", END)
 # === EVOLVE-BLOCK-END ===
+
+
+def answer(question: str, schema: str, db_id: str, fewshot: list[dict]) -> str:
+    g = StateGraph(AgentState)
+    build_graph(g, lambda msgs: llm.chat(msgs, role="agent"), lambda q: try_sql(db_id, q))
+    out = g.compile().invoke({"question": question, "schema": schema, "db_id": db_id, "fewshot": fewshot},
+                             {"recursion_limit": MAX_STEPS})
+    return out.get("sql", "")
 
 
 def main() -> None:
@@ -69,9 +96,7 @@ def main() -> None:
 
     def solve(p: dict) -> dict:
         try:
-            sql = generate(p["question"], schema_text(tables, p["db_id"]), p["db_id"], fewshot,
-                           lambda msgs: llm.chat(msgs, role="agent"), lambda q: try_sql(p["db_id"], q))
-            return {"id": p["id"], "sql": sql}
+            return {"id": p["id"], "sql": answer(p["question"], schema_text(tables, p["db_id"]), p["db_id"], fewshot)}
         except Exception as e:  # 한 문제 실패가 전체를 멈추지 않게. 빈 sql은 틀린 것으로 채점됨.
             print(f"[sql_agent] {p['id']} failed: {type(e).__name__}: {e}", flush=True)
             return {"id": p["id"], "sql": ""}

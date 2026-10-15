@@ -10,18 +10,21 @@ hook 하나에 넣어 돌려 본 뒤 같은 양식으로 경험을 적는다. �
 ## 1. 10분 안에
 
 ```bash
-pip install -r requirements.txt
-cp .env.example .env      # 열어서 값을 채운다. 아래 export 대신 .env 를 써도 된다
+# uv 없으면: brew install uv  (또는 curl -LsSf https://astral.sh/uv/install.sh | sh)
+make install                                    # uv sync: .venv(Python 3.11) + pyproject.toml/uv.lock 의존성
+cp .env.example .env      # 열어서 값을 채운다
 # 기본 경로: OpenRouter (전원 같은 모델·같은 provider)
-export LLM_BASE_URL=https://openrouter.ai/api/v1
-export LLM_API_KEY=<OpenRouter 키>
-export LLM_MODEL=qwen/qwen-2.5-7b-instruct
-export LLM_PROVIDER=Phala                       # provider 고정. 양자화가 같아야 점수를 나란히 놓을 수 있음
-export LLM_CONCURRENCY=8                        # 병렬 호출 수
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_API_KEY=<OpenRouter 키>
+LLM_MODEL=qwen/qwen-2.5-7b-instruct
+LLM_PROVIDER=Phala                              # provider 고정. 양자화가 같아야 점수를 나란히 놓을 수 있음
+LLM_CONCURRENCY=8                               # 병렬 호출 수
 # 로컬 LM Studio로 쓰려면: LLM_BASE_URL=http://localhost:1234/v1, LLM_MODEL=<로드한 모델 id>, LLM_PROVIDER 비움, LLM_CONCURRENCY=1
-python -m scripts.test_eval --runs 3            # v0 test score (200문제 × 3회 평균)
-python -m loop.run --rounds 1                   # 1 round. logs/rounds.jsonl 에 한 줄
+make test                                       # v0 test score (200문제 × 3회 평균)
+make round                                      # 1 round. N=20 이면 20 round. logs/rounds.jsonl 에 한 줄
+make results W=1                                # 주차 결과 표
 ```
+- `make` 없이 직접 돌리려면 `uv run python -m scripts.test_eval --runs 3` 처럼 `uv run`을 붙인다. venv activate 불필요.
 - LLM 없이 loop 동작만 보려면 `LLM_BACKEND=mock` 을 붙인다. 점수는 의미 없다.
 - Improver(patch를 제안하는 LLM)를 SQL agent와 다른 모델로 쓰려면 `IMPROVER_LLM_BASE_URL`, `IMPROVER_LLM_MODEL`, `IMPROVER_LLM_API_KEY`.
 - 데이터(`data/`)는 운영자가 배포한 것을 그대로 쓴다. validation 100(Spider train), test 200(Spider dev), few-shot pool 300, DB 25개(약 18MB, `starter_data_database.zip`을 같은 자리에 풀면 `data/database/`가 생김). Spider는 CC BY-SA 4.0.
@@ -32,10 +35,10 @@ python -m loop.run --rounds 1                   # 1 round. logs/rounds.jsonl 에
 
 | 경로 | 하는 일 | 누가 고치나 |
 |---|---|---|
-| `sql_agent/run.py` | SQL agent CLI. `prompt` 블록(system prompt, few-shot 선택)과 `code` 블록(`generate`: ask·run_sql로 생성→실행→수정)만 Improver가 고침 | Improver (`editable_blocks`에 적힌 EVOLVE-BLOCK 안) |
+| `sql_agent/run.py` | SQL agent CLI (LangGraph). `prompt` 블록(system prompt, few-shot 선택)과 `code` 블록(`build_graph`: 문제 하나를 푸는 graph의 노드·엣지)만 Improver가 고침 | Improver (`editable_blocks`에 적힌 EVOLVE-BLOCK 안) |
 | `sql_agent/llm.py`, `schema.py` | LLM 호출, 스키마 텍스트. EVOLVE-BLOCK 밖 | 사람 |
 | `evaluator/evaluate.py`, `rules.py`, `rules_v0.py` | `evaluate(pred, problems, db_dir, rules)`. `rules.py`의 `evaluator` EVOLVE-BLOCK은 6주차에 `editable_blocks`에 추가할 수 있고, test는 `rules_v0.py`(고정)로 채점 | Improver (`editable_blocks`에 추가한 뒤) |
-| `loop/run.py` | round loop (아래 3) | 고정 |
+| `loop/run.py` | round loop. LangGraph `StateGraph` (아래 3) | 고정 |
 | `loop/patch.py` | EVOLVE-BLOCK 교체, guard | 고정 |
 | `loop/archive.py` | git commit/checkout, 최고 commit 추적 | 고정 |
 | `loop/prompts/` | 진단·patch 프롬프트 | 사람 (8주차에 goal 바꾸기) |
@@ -47,6 +50,7 @@ python -m loop.run --rounds 1                   # 1 round. logs/rounds.jsonl 에
 ## 3. 한 round와 hook 10개
 
 loop는 round마다 아래 순서로 돌고, 번호 붙은 곳에서 `hooks/`의 함수를 부른다. 함수 이름·인자·반환은 고정이고 본문만 바꾼다.
+코드로는 LangGraph `StateGraph` 하나다. 노드 `begin → diagnose → propose → review → apply → screen → full → after_eval`, 거부되면 조건부 엣지로 바로 `after_eval`, `should_stop`이 False면 다음 round의 `begin`으로 돌아간다. hook은 노드 안에서 불리므로 hook만 바꾸는 사람은 LangGraph를 몰라도 된다.
 
 ![한 round의 흐름과 hook 10개의 위치](docs/round.png)
 
@@ -74,8 +78,8 @@ rollback은 없다. 모든 patch가 commit으로 남고, 다음 round는 `select
 
 1. `hooks/` 안의 함수 하나(또는 둘)의 본문을 바꾼다. 시그니처는 그대로. 10개 어디에도 안 들어가는 method면 `loop/run.py`를 고쳐도 된다 (아래 6).
 2. `config.yaml`의 `hook_changed`에 바꾼 hook 이름을, `week`에 주차를 적는다.
-3. `python -m loop.run --rounds 20`
-4. `python -m scripts.test_eval --runs 3`, `python -m scripts.results --week N` 으로 결과 표를 채운다.
+3. `make round N=20`
+4. `make test`, `make results W=N` 으로 결과 표를 채운다.
 
 hook 안에서 할 수 있는 것: `ctx` 읽기, `logs/` 아래 파일 읽고 쓰기, `ctx.llm(messages, role="improver")`로 LLM 추가 호출(호출 수는 결과 표 "비용"에).
 하면 안 되는 것: `data/test.json` 열기, `sql_agent/run.py`를 직접 고치기(SQL agent 변경은 patch 경로로만), `loop/`·`evaluator/` 고치기. loop는 hook을 검사하지 않으므로 규칙으로만 지킨다.
@@ -95,11 +99,28 @@ starter에는 EVOLVE-BLOCK 세 개(`prompt`, `code`, `evaluator`)가 이미 들�
 |---|---|---|
 | v0 | `prompt` EVOLVE-BLOCK | 기본 `editable_blocks: [prompt]` |
 | 3 | Improver의 playbook | `after_eval`이 `logs/playbook.md`에 적고 `build_prompt`가 읽음 |
-| 4 | `code` EVOLVE-BLOCK (SQL agent가 `run_sql`로 실행해 보고 고치는 단계) | `editable_blocks: [prompt, code]` |
+| 4 | `code` EVOLVE-BLOCK (SQL agent graph에 `run_sql`로 실행해 보고 고치는 노드 추가) | `editable_blocks: [prompt, code]` |
 | 5 | few-shot pool 축적 | `after_eval`이 맞춘 (질문, SQL)을 pool에 추가 |
 | 6 | `evaluator` EVOLVE-BLOCK (validation 문제 선택·비교 규칙) | `editable_blocks: [prompt, code, evaluator]`, `accept`를 정합성 검사로. test 채점은 `rules_v0.py`(고정)라 영향 없음 |
 | 7 | 탐색 | `propose`를 best-of-K, `select_parent`를 가중 선택으로 |
 | 8 | goal | `loop/prompts/patch.md`의 Goal을 "점수를 올려라"로 바꾸고 guard 거부 횟수를 셈 |
+
+4주차 `code` 블록이 될 수 있는 모양 (실행해 보고 오류면 최대 2번 고침). v0는 `generate` 노드 하나다.
+```python
+def build_graph(g, ask, run_sql):
+    def generate(s):
+        return {"sql": extract_sql(ask(build_messages(s["question"], s["schema"], s["fewshot"]))), "attempts": 0}
+    def check(s):
+        return {"result": run_sql(s["sql"])}
+    def fix(s):
+        msgs = build_messages(s["question"], s["schema"], s["fewshot"]) + [
+            {"role": "assistant", "content": s["sql"]},
+            {"role": "user", "content": f"Error: {s['result']['error']}. Return a corrected SQL query only."}]
+        return {"sql": extract_sql(ask(msgs)), "attempts": s["attempts"] + 1}
+    g.add_node("generate", generate); g.add_node("check", check); g.add_node("fix", fix)
+    g.add_edge(START, "generate"); g.add_edge("generate", "check"); g.add_edge("fix", "check")
+    g.add_conditional_edges("check", lambda s: END if s["result"]["ok"] or s["attempts"] >= 2 else "fix")
+```
 
 ## 6. 고정인 것과 자유인 것
 
