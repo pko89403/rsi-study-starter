@@ -1,7 +1,9 @@
 # Text-to-SQL starter (RSI 논문 스터디)
 
-각자 **SQL agent**(질문 → SQL)와 그것을 고치는 **loop**를 가지고, 매주 발제 논문의 method를
-loop의 결정 지점(hook) 하나에 넣어 돌려 본 뒤 같은 양식으로 경험을 적는다. 이 repo는 그 최소 형태다.
+각자 **SQL agent**(질문 → SQL)와 그것을 고치는 **Improver**(loop + Improver LLM + hook 10개)를 가지고, 매주 발제 논문의 method를
+hook 하나에 넣어 돌려 본 뒤 같은 양식으로 경험을 적는다. 이 repo는 그 최소 형태다.
+
+![starter의 두 구성 요소: SQL agent는 문제를 풀고, Improver는 그 점수를 보고 열린 블록을 고친다](docs/components.png)
 
 ## 1. 10분 안에
 
