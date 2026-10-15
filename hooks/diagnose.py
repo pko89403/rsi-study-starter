@@ -9,4 +9,4 @@ def diagnose(ctx: RoundContext) -> str:
         return "no wrong answers"
     user = "\n".join(f"Q: {ctx.problem(p['id'])['question']}\nSQL: {ctx.prediction(p['id'])}\nerror: {p['error']}" for p in wrong)
     return ctx.llm([{"role": "system", "content": ctx.prompt_text("diagnose.md")},
-                    {"role": "user", "content": user}], role="improver", max_tokens=120).strip()
+                    {"role": "user", "content": user}], role="improver", max_tokens=ctx.config.get("improver_max_tokens", 4096)).strip()

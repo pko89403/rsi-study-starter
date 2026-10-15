@@ -9,6 +9,7 @@ noise_margin: 3          # 문제 수. accept 기본 규칙
 screen_drop: 2           # screen에서 이만큼 떨어지면 거부
 agent_timeout_sec: 1800
 sql_timeout_sec: 5
+improver_max_tokens: 4096   # Improver LLM 출력 상한(진단·patch). 7B 정상 patch는 300~600토큰. 추론 모델(Qwen3, gpt-oss)은 생각 토큰도 여기서 쓰므로 8192~16384
 editable_blocks: [prompt]    # Improver가 고칠 수 있는 블록. 4주차 예: [prompt, code], 6주차 예: [prompt, code, evaluator]
 evolve_files: [sql_agent/run.py, evaluator/rules.py]   # 블록이 들어 있는 파일
 log: logs/rounds.jsonl

@@ -39,10 +39,10 @@ def fake_ctx(cfg: dict, diagnosis: str) -> RoundContext:
                         blocks=blocks, diagnosis=diagnosis, llm=llm.chat)
 
 
-def run_one(ctx: RoundContext, src_run_py: str, model: str) -> dict:
+def run_one(ctx: RoundContext, src_run_py: str, model: str, max_tokens: int) -> dict:
     """patch 하나를 요청해 단계별로 검사한다. 반환: {"stage": 멈춘 단계 또는 "ok", "reason", "seconds", "chars", "block"}"""
     t0 = time.time()
-    text = llm.chat(build_prompt(ctx), role="improver", max_tokens=2048)
+    text = llm.chat(build_prompt(ctx), role="improver", max_tokens=max_tokens)
     sec = time.time() - t0
     rec = {"model": model, "seconds": round(sec, 1), "chars": len(text), "stage": None, "reason": None, "block": None}
 
@@ -101,6 +101,7 @@ def run_one(ctx: RoundContext, src_run_py: str, model: str) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=20)
+    ap.add_argument("--max-tokens", type=int, help="config.yaml 의 improver_max_tokens 를 덮어씀")
     ap.add_argument("--model", help="IMPROVER_LLM_MODEL 을 덮어씀")
     ap.add_argument("--base-url", help="IMPROVER_LLM_BASE_URL 을 덮어씀")
     ap.add_argument("--provider", help="IMPROVER_LLM_PROVIDER 를 덮어씀 (OpenRouter provider 고정)")
@@ -123,7 +124,7 @@ def main() -> None:
     with out.open("a") as f:
         for i in range(a.n):
             try:
-                r = run_one(ctx, src, model)
+                r = run_one(ctx, src, model, a.max_tokens or cfg.get("improver_max_tokens", 4096))
             except Exception as ex:  # LLM 호출 실패 등. 한 번의 실패가 측정을 멈추지 않게 기록만 한다.
                 r = {"model": model, "stage": "error", "reason": f"{type(ex).__name__}: {str(ex)[:200]}"}
                 traceback.print_exc(limit=1, file=sys.stderr)

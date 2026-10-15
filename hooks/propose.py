@@ -5,5 +5,5 @@ from loop.patch import Patch, parse_patch
 
 
 def propose(ctx: RoundContext, messages: list[dict]) -> list[Patch]:
-    p = parse_patch(ctx.llm(messages, role="improver", max_tokens=2048))
+    p = parse_patch(ctx.llm(messages, role="improver", max_tokens=ctx.config.get("improver_max_tokens", 4096)))
     return [p] if p else []
