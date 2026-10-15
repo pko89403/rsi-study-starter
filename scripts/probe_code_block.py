@@ -1,12 +1,12 @@
-"""Improver 후보 모델이 4주차 `code` EVOLVE-BLOCK(build_graph) patch를 낼 수 있는지 잰다.
+"""Improver 후보 모델이 4주차 `code` EVOLVE-BLOCK(노드 본문 4개 + MAX_ATTEMPTS) patch를 낼 수 있는지 잰다.
 
 사용법:
   uv run python -m scripts.probe_code_block --n 20                       # .env 의 IMPROVER_* (없으면 LLM_*) 설정으로
   uv run python -m scripts.probe_code_block --n 20 --model qwen/qwen3-14b --base-url https://openrouter.ai/api/v1
   uv run python -m scripts.probe_code_block --n 20 --model qwen3-14b --base-url http://localhost:1234/v1   # LM Studio
 
-하는 일: 실제 build_prompt(계약 포함)로 patch 요청 → parse → guard → 블록을 exec → StateGraph에 build_graph 적용
-→ compile → 가짜 ask/run_sql 로 1회 invoke. 단계별 실패 수와 통과율을 표로 낸다. 점수는 재지 않는다(그건 loop가 한다).
+하는 일: 실제 build_prompt(계약 포함)로 patch 요청 → parse → guard → 블록을 exec → 고정 배선 make_graph()
+→ compile → 가짜 ask/try_sql 로 1회 invoke(첫 SQL은 실패하게 해 재시도 경로를 밟게 함). 단계별 실패 수와 통과율을 표로 낸다. 점수는 재지 않는다(그건 loop가 한다).
 SQL agent 파일은 건드리지 않는다. 결과는 logs/probe_<model>.jsonl 에 한 줄씩 남는다.
 """
 from __future__ import annotations
@@ -15,17 +15,16 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
-from langgraph.graph import StateGraph, START, END
 
 from loop import patch as P
 from loop.context import RoundContext
 from loop.env import load_env
 from hooks.build_prompt import build_prompt
 from sql_agent import llm
-from sql_agent.run import AgentState, extract_sql, MAX_STEPS
+from sql_agent.run import MAX_STEPS
 from sql_agent.schema import schema_text
 
-STAGES = ["parse", "guard", "exec", "build", "compile", "invoke", "ok"]
+STAGES = ["parse", "guard", "exec", "build", "invoke", "ok"]
 
 
 def fake_ctx(cfg: dict, diagnosis: str) -> RoundContext:
@@ -66,8 +65,9 @@ def run_one(ctx: RoundContext, src_run_py: str, model: str) -> dict:
         exec(compile(module_src, "<probe>", "exec"), ns)
     except Exception as ex:
         rec.update(stage="exec", reason=f"{type(ex).__name__}: {ex}"); return rec
-    if "build_graph" not in ns:
-        rec.update(stage="exec", reason="build_graph 가 정의되지 않음"); return rec
+    missing = [n for n in ("MAX_ATTEMPTS", "select_schema", "generate", "fix", "route") if n not in ns]
+    if missing:
+        rec.update(stage="exec", reason=f"missing names: {missing}"); return rec
 
     calls = {"ask": 0, "run_sql": 0}
 
@@ -75,30 +75,26 @@ def run_one(ctx: RoundContext, src_run_py: str, model: str) -> dict:
         calls["ask"] += 1
         return "SELECT count(*) FROM nosuch" if calls["ask"] == 1 else "SELECT count(*) FROM singer"
 
-    def run_sql(sql):
+    def run_sql(db_id, sql, limit=5):
         calls["run_sql"] += 1
         ok = "nosuch" not in sql
-        return {"ok": ok, "rows": [[6]] if ok else [], "error": None if ok else "no such table: nosuch"}
+        return {"ok": ok, "rows": [(6,)] if ok else [], "error": None if ok else "OperationalError: no such table: nosuch"}
 
-    g = StateGraph(AgentState)
+    ns["ask"] = ask; ns["try_sql"] = run_sql   # 블록 함수들은 모듈 전역 ask/try_sql 을 쓴다
     try:
-        ns["build_graph"](g, ask, run_sql)
+        app = ns["make_graph"]()
     except Exception as ex:
         rec.update(stage="build", reason=f"{type(ex).__name__}: {ex}"); return rec
     try:
-        app = g.compile()
-    except Exception as ex:
-        rec.update(stage="compile", reason=f"{type(ex).__name__}: {ex}"); return rec
-    try:
-        out = app.invoke({"question": "How many singers?", "schema": "singer(id, name)", "db_id": "concert_singer", "fewshot": []},
+        out = app.invoke({"question": "How many singers?", "schema": "table singer(id, name)", "db_id": "concert_singer", "fewshot": []},
                          {"recursion_limit": MAX_STEPS})
     except Exception as ex:
         rec.update(stage="invoke", reason=f"{type(ex).__name__}: {str(ex)[:200]}"); return rec
     sql = out.get("sql", "")
     if not sql:
         rec.update(stage="invoke", reason="END 에서 sql 이 비어 있음"); return rec
-    rec.update(stage="ok", reason=None, sql=sql, ask_calls=calls["ask"], run_sql_calls=calls["run_sql"],
-               uses_run_sql=calls["run_sql"] > 0, lines=pt.content.count("\n") + 1)
+    rec.update(stage="ok", reason=None, sql=sql, ask_calls=calls["ask"], attempts=out.get("attempts"),
+               retries=calls["ask"] > 1, fixed=sql.strip().lower().endswith("from singer"), lines=pt.content.count("\n") + 1)
     return rec
 
 
@@ -142,7 +138,7 @@ def main() -> None:
     for st in STAGES + ["error"]:
         if c.get(st): print(f"{st:9s} {c[st]}")
     if ok:
-        print(f"uses run_sql: {sum(r['uses_run_sql'] for r in ok)}/{len(ok)}   "
+        print(f"retries (route sent to fix): {sum(r['retries'] for r in ok)}/{len(ok)}   fixed the SQL: {sum(r['fixed'] for r in ok)}/{len(ok)}   "
               f"mean lines: {sum(r['lines'] for r in ok)/len(ok):.0f}   mean seconds: {sum(r['seconds'] for r in ok)/len(ok):.1f}")
     print(f"log: {out}")
 

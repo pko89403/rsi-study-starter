@@ -11,14 +11,15 @@ CONTRACTS = {
   You do NOT need to read any file. Never use open(), os, subprocess, or imports inside the block.
 - build_messages must return a list of chat messages (dicts with "role" and "content").
 - The model answering is small (7B); keep the prompt short and concrete.""",
-    "code": """Block 'code' (sql_agent/run.py): def build_graph(g, ask, run_sql) -> None. It adds LangGraph nodes and edges to g.
-- g is a StateGraph over AgentState with keys: question, schema, db_id, fewshot, sql (the answer read at END), result, attempts.
-  A node is def node(s) -> dict that returns only the keys it updates.
-- Use g.add_node(name, node), g.add_edge(a, b), g.add_conditional_edges(a, route) where route(s) returns a node name or END.
-  Names available without import: START, END, AgentState, build_messages, extract_sql.
-- ask(messages) -> str calls the LLM. run_sql(sql) -> {"ok": bool, "rows": [...], "error": str|None} executes sql
-  read-only on this problem's database (it does not know the gold answer).
-- The graph must reach END; it is cut after 12 steps. Keep it under ~40 lines.""",
+    "code": """Block 'code' (sql_agent/run.py): the bodies of the SQL agent's graph nodes. The wiring is FIXED outside the block:
+  START -> select_schema -> generate -> execute -> route -> ("fix" -> execute again | END)
+- Keep these top-level names: MAX_ATTEMPTS (int), select_schema(s), generate(s), fix(s), route(s).
+- s is the agent state dict with keys: question, schema, db_id, fewshot, sql, result, attempts.
+  A node returns a dict with only the keys it changes. route(s) returns the string "fix" or END.
+- execute (outside the block) runs s["sql"] on this problem's database and sets s["result"] = {"ok": bool, "rows": [...], "error": str|None}.
+  It does not know the gold answer.
+- ask(messages) -> str calls the LLM. Names available without import: END, ask, build_messages, extract_sql.
+- v0: select_schema returns {} (no change) and route always returns END (no retry). Keep the block under ~40 lines.""",
     "evaluator": """Block 'evaluator' (evaluator/rules.py): select_problems(problems) -> list and compare(pred_rows, gold_rows, gold_sql) -> bool
 - These define how validation is scored. Changing them changes the score itself; the held-out test uses a frozen copy.""",
 }

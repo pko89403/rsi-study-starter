@@ -36,7 +36,7 @@ make results W=1                                # 주차 결과 표
 
 | 경로 | 하는 일 | 누가 고치나 |
 |---|---|---|
-| `sql_agent/run.py` | SQL agent CLI (LangGraph). `prompt` 블록(system prompt, few-shot 선택)과 `code` 블록(`build_graph`: 문제 하나를 푸는 graph의 노드·엣지)만 Improver가 고침 | Improver (`editable_blocks`에 적힌 EVOLVE-BLOCK 안) |
+| `sql_agent/run.py` | SQL agent CLI (LangGraph). `prompt` 블록(system prompt, few-shot 선택)과 `code` 블록(노드 본문 `select_schema`·`generate`·`fix`·`route`와 `MAX_ATTEMPTS`)만 Improver가 고침. 배선 `select_schema → generate → execute → route → fix/END`는 고정 | Improver (`editable_blocks`에 적힌 EVOLVE-BLOCK 안) |
 | `sql_agent/llm.py`, `schema.py` | LLM 호출, 스키마 텍스트. EVOLVE-BLOCK 밖 | 사람 |
 | `evaluator/evaluate.py`, `rules.py`, `rules_v0.py` | `evaluate(pred, problems, db_dir, rules)`. `rules.py`의 `evaluator` EVOLVE-BLOCK은 6주차에 `editable_blocks`에 추가할 수 있고, test는 `rules_v0.py`(고정)로 채점 | Improver (`editable_blocks`에 추가한 뒤) |
 | `loop/run.py` | round loop. LangGraph `StateGraph` (아래 3) | 고정 |
@@ -92,7 +92,7 @@ hook 안에서 할 수 있는 것: `ctx` 읽기, `logs/` 아래 파일 읽고 �
 ## 5. 주차별로 `editable_blocks`에 추가하는 것
 
 starter에는 EVOLVE-BLOCK 세 개(`prompt`, `code`, `evaluator`)가 이미 들어 있다. `config.yaml`의 `editable_blocks`에 이름을 더하면 Improver가 그 블록을 고칠 수 있다.
-주차별 예와 4주차 `code` 블록(LangGraph `build_graph`) 예는 위키 [주차별 로드맵](https://github.com/pko89403/rsi-study-starter/wiki/주차별-로드맵)에 있다.
+주차별 예와 4주차 `code` 블록(노드 본문·`route`) 예는 위키 [주차별 로드맵](https://github.com/pko89403/rsi-study-starter/wiki/주차별-로드맵)에 있다.
 
 ## 6. 고정인 것과 자유인 것
 
@@ -115,7 +115,7 @@ method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 
 | D. 평가 조건 5개를 바꿔야 함 | validation 문제 교체, test 채점 규칙 변경, 모델 교체, `rounds.jsonl` 필드 삭제 | 안 됨. 그 주 표에 다른 사람과 나란히 놓을 수 없음 | 하고 싶으면 표 밖에 "참고 실험"으로 따로 적음 |
 
 A가 대부분이고, B가 가끔, C는 드물다. D만 막혀 있다.
-- C의 선: 사람이 SQL agent를 고치는 것과 Improver가 고치는 것을 섞지 않는다. helper 추가(사람)는 SQL agent 기준선을 바꾸는 변경이고, 그 helper를 쓰는 graph를 짜는 것(Improver)이 method 효과다. 전자는 "전" 점수 재측정으로 분리하고, 후자만 표의 전/후 차이로 읽는다. helper를 추가하면서 `build_graph` 본문까지 사람이 바꾸면 이 분리가 깨진다.
+- C의 선: 사람이 SQL agent를 고치는 것과 Improver가 고치는 것을 섞지 않는다. helper 추가(사람)는 SQL agent 기준선을 바꾸는 변경이고, 그 helper를 노드 본문에서 쓰는 것(Improver)이 method 효과다. 전자는 "전" 점수 재측정으로 분리하고, 후자만 표의 전/후 차이로 읽는다. helper를 추가하면서 `code` 블록 본문까지 사람이 바꾸면 이 분리가 깨진다. 배선(`make_graph`)을 사람이 바꾸는 것도 C다.
 - hook이 못 하는 것: 단계 사이에 끼어들기, 단계 순서 바꾸기, 여러 SQL agent를 동시에 유지하기(population), SQL agent가 쓸 수 있는 이름 늘리기. 이것들이 B·C다.
 - 가중치를 학습하는 method(self-reward, STaR 등 Training-time)는 모델이 고정이라 그대로는 안 된다. in-context 버전(맞춘 예시를 pool에 쌓기, self-play 문제 생성 노드)으로 바꿔 체험하고 "전제 조건"에 적는다.
 ## 7. 결과 표
