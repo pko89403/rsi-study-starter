@@ -2,7 +2,7 @@
 입력 문제에는 gold_sql이 없다. 출력은 한 줄에 {"id","sql"}.
 문제 하나 = graph 한 번 실행. 배선(select_schema → generate → execute → fix)은 고정이고, 노드 본문은 `code` 블록이 정한다."""
 from __future__ import annotations
-import argparse, json, os, re, sqlite3
+import argparse, json, os, re, sqlite3, time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import TypedDict
@@ -11,7 +11,7 @@ from sql_agent import llm
 from sql_agent.schema import schema_text
 
 DATA_DIR = Path(os.environ.get("STARTER_DATA_DIR", "data"))
-MAX_STEPS = 20   # graph가 END에 못 가고 맴돌 때 자르는 단계 수 (fix 5회면 ~13단계)
+MAX_STEPS = 25   # graph가 END에 못 가고 맴돌 때 자르는 단계 수 (fix 5회 = 3 + 2*5 = 13 노드 + 여유)
 
 
 class AgentState(TypedDict, total=False):
@@ -21,21 +21,32 @@ class AgentState(TypedDict, total=False):
     fewshot: list[dict]
     sql: str          # 답. END에서 이 값을 낸다
     result: dict      # 마지막 run_sql 결과 {"ok","rows","error"}
-    attempts: int
+    attempts: int     # 블록 안 노드가 올리는 값(참고용). 상한은 executions로 건다
+    executions: int   # execute 노드가 올린다. 블록이 바꿀 수 없음
 
 
-def try_sql(db_id: str, sql: str, limit: int = 5) -> dict:
-    """SQL을 읽기 전용으로 실행해 본다. 블록 안 code가 '생성 → 실행 → 수정'에 쓰는 도구.
-    반환: {"ok": bool, "rows": [...최대 limit행], "error": str | None}. 정답은 모른다."""
+SQL_TIMEOUT = float(os.environ.get("SQL_TIMEOUT_SEC", "5"))   # try_sql 한 번의 상한(초). evaluator와 같은 방식
+
+
+def try_sql(db_id: str, sql: str, limit: int = 5, timeout: float = SQL_TIMEOUT) -> dict:
+    """SQL을 읽기 전용으로 실행해 본다. execute 노드가 쓰는 도구.
+    반환: {"ok": bool, "rows": [...최대 limit행], "error": str | None}. 정답은 모른다.
+    timeout초를 넘기면 progress handler가 중단시키고 ok=False, error="timeout"."""
     db = DATA_DIR / "database" / db_id / f"{db_id}.sqlite"
     try:
-        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=5)
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=timeout)
         try:
-            con.execute("PRAGMA busy_timeout=5000")
+            con.execute(f"PRAGMA busy_timeout={int(timeout*1000)}")
+            deadline = time.monotonic() + timeout
+            con.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 10000)
             rows = con.execute(sql).fetchmany(limit)
         finally:
             con.close()
         return {"ok": True, "rows": [tuple(r) for r in rows], "error": None}
+    except sqlite3.OperationalError as e:
+        if "interrupted" in str(e).lower():
+            return {"ok": False, "rows": [], "error": f"timeout: query exceeded {timeout:g}s"}
+        return {"ok": False, "rows": [], "error": f"{type(e).__name__}: {e}"[:200]}
     except sqlite3.Error as e:
         return {"ok": False, "rows": [], "error": f"{type(e).__name__}: {e}"[:200]}
 
@@ -94,20 +105,27 @@ def route(s: AgentState) -> str:
 # === EVOLVE-BLOCK-END ===
 
 
-MAX_FIX = 5   # route가 뭐라 하든 fix는 문제당 이 횟수를 넘지 않는다 (비용 상한). 블록 밖.
+MAX_FIX = 5   # route가 뭐라 하든 fix는 문제당 이 횟수를 넘지 않는다 (비용 상한). 블록 밖. 블록 안 attempts와 무관하게 execute 횟수로 센다.
 
 
 def execute(s: AgentState) -> dict:
-    return {"result": try_sql(s["db_id"], s["sql"])}
+    return {"result": try_sql(s["db_id"], s["sql"]), "executions": s.get("executions", 0) + 1}
 
 
 def _route(s: AgentState) -> str:
-    r = route(s)
-    return "fix" if r == "fix" and s.get("attempts", 0) < MAX_FIX else END
+    r = ROUTE(s)
+    fixes_so_far = s.get("executions", 1) - 1   # 첫 execute는 generate 뒤. 그 다음부터가 fix
+    return "fix" if r == "fix" and fixes_so_far < MAX_FIX else END
 
 
 def make_graph():
-    """고정 배선. 노드 본문은 code 블록이 정한다."""
+    """고정 배선. 노드 본문은 code 블록이 정한다. 블록이 이름을 빼먹으면 여기서 NameError."""
+    global ROUTE
+    ROUTE = route
+    for name, fn in (("select_schema", select_schema), ("generate", generate), ("fix", fix), ("route", route)):
+        if not callable(fn):
+            raise TypeError(f"code block: {name} must be a function")
+    int(MAX_ATTEMPTS)
     g = StateGraph(AgentState)
     g.add_node("select_schema", select_schema)
     g.add_node("generate", generate)
@@ -119,6 +137,9 @@ def make_graph():
     g.add_edge("fix", "execute")
     g.add_conditional_edges("execute", _route, {"fix": "fix", END: END})
     return g.compile()
+
+
+GRAPH = make_graph()   # import 시점에 배선. 블록이 route/fix 등을 빼먹으면 여기서 NameError → loop guard의 compile 검사가 잡는다
 
 
 def answer(graph, question: str, schema: str, db_id: str, fewshot: list[dict]) -> str:
@@ -139,7 +160,7 @@ def main() -> None:
             ex = {"question": pool[fid]["question"], "sql": pool[fid]["gold_sql"], "schema": schema_text(tables, pool[fid]["db_id"])}
             fewshot.append(ex)
     problems = json.loads(Path(a.problems).read_text())
-    graph = make_graph()
+    graph = GRAPH
 
     def solve(p: dict) -> dict:
         try:
