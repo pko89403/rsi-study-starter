@@ -1,0 +1,37 @@
+# 평가 데이터 구성 명세. 운영자가 scripts/make_splits.py로 data/를 만들 때 읽는다.
+# 3~8주차 담당자는 자기 주차 칸의 want를 채운다: 자기 method가 고칠 수 있는 문제 유형이 validation 100개 중 최소 몇 개 있어야 하는지.
+# test(200)는 같은 비율로 dev DB에서 뽑는다. 같은 유형이 두 주에 걸치면 큰 값을 쓴다. 합이 100을 넘으면 뒤 주차부터 줄인다.
+#
+# 유형 키 (scripts/make_catalog.py가 붙인다)
+#   v0:   v0(gpt-4.1-nano)가 틀린 방식. ok / exec_error / empty / extra_cols / col_order / missing_cols / row_mismatch
+#   tags: gold SQL 특징. join / group / having / order / limit / nested / setop / agg / distinct / like / value / multi_cond
+#   hardness: easy / medium / hard / extra
+seed: 20261024
+n_val: 100
+n_test: 200
+n_pool: 300
+weeks:
+  3:
+    owner: ""
+    method: ""     # 예: Reflexion. 틀린 답을 돌아보는 메모 → 어떤 유형이든 '틀린 문제'가 많아야 한다
+    want: {v0: {row_mismatch: 20}}
+  4:
+    owner: ""
+    method: ""     # 예: 실행 오류 되먹임(§3.2) → 실행 오류·빈 결과가 있어야 고칠 것이 있다
+    want: {v0: {exec_error: 10, empty: 8}}
+  5:
+    owner: ""
+    method: ""     # 예: 자기 생성 예시 / few-shot 선택(§4) → pool에 validation과 같은 골격이 다른 DB에 있어야 한다
+    want: {tags: {nested: 12, setop: 5, group: 20}}
+  6:
+    owner: ""
+    method: ""     # 예: 자기 평가·심판(§5) → 결과가 "거의 맞는" 문제(열 과다·열 순서)가 있어야 심판이 갈린다
+    want: {v0: {extra_cols: 8, col_order: 4}}
+  7:
+    owner: ""
+    method: ""     # 예: 진화 탐색(§6) → 난이도가 섞여 있어야 parent 선택이 의미 있다
+    want: {hardness: {hard: 15, extra: 12}}
+  8:
+    owner: ""
+    method: ""     # 예: 한계·안전(§7) → goal 변경이 점수를 깎는지 보려면 v0가 이미 맞는 문제도 충분해야 한다
+    want: {v0: {ok: 40}}

@@ -64,6 +64,7 @@ make meta-adopt              # 수정안 채택 (본인이 정한다)
   - few-shot pool 300
   - SQLite DB 25개
   - Spider 라이선스는 CC BY-SA 4.0.
+  - 어떤 문제를 뽑았는지(주차별 고칠 거리 확보)는 [wiki 데이터 구성](https://github.com/pko89403/rsi-study-starter/wiki/데이터-구성)에 있다.
 
 ## 2. 폴더
 
@@ -86,7 +87,9 @@ make meta-adopt              # 수정안 채택 (본인이 정한다)
 | `hooks/*.py` | 결정 지점 10개. **매주 method는 이 중 하나의 본문을 바꾼다** | 각자 |
 | `data/test.json` | test. loop는 열지 않는다 | 아무도 |
 | `logs/rounds.jsonl` | round당 한 줄 | loop |
-| `scripts/` | test 평가, 결과 표, 분할 생성(운영자), Improver LLM 후보 측정(`probe_code_block`) | — |
+| `scripts/` | test 평가, 결과 표, Improver LLM 후보 측정(`probe_code_block`) | — |
+| `scripts/split_spec.yaml` | 평가 데이터 구성 명세. 3~8주차 담당자가 자기 method에 필요한 문제 유형을 적는다 ([wiki 데이터 구성](https://github.com/pko89403/rsi-study-starter/wiki/데이터-구성)) | 주차 담당자 (PR) |
+| `scripts/make_catalog.py`, `make_splits.py` | Spider 후보에 v0를 돌려 유형을 붙이고, 명세대로 `data/`를 만든다 | 운영자 |
 
 ### 2-1. SQL agent의 모양
 
