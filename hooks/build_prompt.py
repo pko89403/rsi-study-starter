@@ -12,16 +12,33 @@ KNOBS = {
     "n_wrong": ("int", 3, 20, 10),       # 보여 줄 틀린 문제 수
     "show_pool": ("int", 0, 20, 12),     # 보여 줄 few-shot pool 후보 수
     "guidance": ("str", 400, ""),        # patch 작성 지침 한두 문장
+    "target_error_class": ("enum", ["any", "exec_error", "mismatch", "rotate"], "any"),   # 이번 round에 겨냥할 오답 유형
 }
 KNOB_DOCS = {   # Improver LLM이 읽는 손잡이 설명
     "n_wrong": "how many wrong validation examples (question, predicted SQL, error) the patch prompt shows",
     "show_pool": "how many few-shot pool candidates (id, db, question) the patch prompt lists for choosing FEWSHOT_IDS",
     "guidance": "an instruction sentence added to the patch prompt telling the patch writer how to write patches",
+    "target_error_class": "which wrong answers the round focuses on: any; exec_error (SQL failed to run); mismatch (ran but wrong result); rotate (alternate by round). A narrow target gives small patches that change few answers, which the fixed judge accepts at a lower bar",
 }
 
 
 def knob(ctx: RoundContext, name: str):
     return (ctx.improver or {}).get(name, KNOBS[name][-1])
+
+
+def target(ctx: RoundContext) -> str:
+    t = knob(ctx, "target_error_class")
+    return ["exec_error", "mismatch"][ctx.seed % 2] if t == "rotate" else t
+
+
+def target_wrong(ctx: RoundContext) -> list[dict]:
+    """겨냥한 유형의 오답 (없으면 전체 오답). exec_error = 실행 실패, mismatch = 실행됐지만 결과가 다름."""
+    wrong = [p for p in ctx.before["per_problem"] if not p["correct"]]
+    t = target(ctx)
+    if t == "any":
+        return wrong
+    pick = [p for p in wrong if (p["error"] == "result mismatch") == (t == "mismatch")]
+    return pick or wrong
 
 CONTRACTS = {
     "prompt": """Block 'prompt' (sql_agent/run.py). How it is used by code outside the block, which you cannot change:
@@ -55,7 +72,7 @@ def _pool_samples(ctx: RoundContext, n: int) -> str:
 
 
 def build_prompt(ctx: RoundContext) -> list[dict]:
-    wrong = [p for p in ctx.before["per_problem"] if not p["correct"]]
+    wrong = target_wrong(ctx)
     random.Random(ctx.seed).shuffle(wrong)   # round마다 다른 오답 표본 (같은 입력 → 같은 patch 반복을 막는다)
     wrong = wrong[: knob(ctx, "n_wrong")]
     wrong_txt = "\n".join(f"- {ctx.problem(p['id'])['question']}\n  predicted: {ctx.prediction(p['id'])}\n  error: {p['error']}" for p in wrong)
@@ -65,6 +82,9 @@ def build_prompt(ctx: RoundContext) -> list[dict]:
     user = (f"Validation score: {ctx.before['correct']}/{ctx.before['n']}\nDiagnosis: {ctx.diagnosis}\n\n"
             f"This round, patch block '{b}' (BLOCK: {b}).\n\n{CONTRACTS.get(b, f'Block {b!r}')}\n\n"
             + (f"Guidance: {guidance}\n\n" if guidance else "")
+            + (f"Focus: fix only the {'SQL that fails to run' if target(ctx) == 'exec_error' else 'SQL that runs but returns the wrong result'} "
+               "(examples below). Make the smallest change that fixes them; do not rewrite unrelated instructions, so correct answers stay correct.\n\n"
+               if target(ctx) != "any" else "")
             + f"{_pool_samples(ctx, knob(ctx, 'show_pool'))}\n\nWrong examples:\n{wrong_txt}\n\nRecent rounds:\n{log_txt or '(none)'}\n\n"
             f"Current block '{b}':\n<<<CURRENT_BLOCK {b}>>>\n{ctx.block}\n<<<END_BLOCK>>>")
     return [{"role": "system", "content": ctx.prompt_text("patch.md")}, {"role": "user", "content": user}]

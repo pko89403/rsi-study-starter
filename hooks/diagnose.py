@@ -2,6 +2,7 @@
 from __future__ import annotations
 import random
 from loop.context import RoundContext
+from hooks.build_prompt import target_wrong
 
 KNOBS = {
     "diagnose_n": ("int", 5, 25, 15),     # 진단에 보여 줄 틀린 문제 수
@@ -15,7 +16,7 @@ KNOB_DOCS = {
 
 def diagnose(ctx: RoundContext) -> str:
     k = lambda name: (ctx.improver or {}).get(name, KNOBS[name][-1])
-    wrong = [p for p in ctx.before["per_problem"] if not p["correct"]]
+    wrong = target_wrong(ctx)   # build_prompt의 target_error_class와 같은 유형을 진단한다
     if not wrong:
         return "no wrong answers"
     random.Random(ctx.seed).shuffle(wrong)
