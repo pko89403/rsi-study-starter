@@ -3,7 +3,7 @@
 3~8주차 후보 논문에서 고른 메소드를 hook으로 구현해 실제로 돌려 본 예시입니다.
 발제자가 method를 제안할 때, 참가자가 hook을 고칠 때 참고합니다. **정답이 아닙니다.** 각자 다르게 구현해도 됩니다.
 
-- 조건: main(10/17 데이터) 위, SQL agent·Improver LLM 모두 gpt-4.1-nano, 8 round, 1회 측정.
+- 조건: 교체 전 무작위 데이터(v0 validation 72, test 139) 위, SQL agent·Improver LLM 모두 gpt-4.1-nano, 8 round, 1회 측정.
 - validation sd ~1, test 1회 sd ~1.5. 아래 test 숫자는 1회라 메소드 효과로 단정할 수 없습니다.
 - 4·5주차 예시는 아직 없습니다 (측정 중).
 
@@ -20,7 +20,7 @@ make round N=20
 
 ## 요약
 
-| 주차 | 폴더 | 논문 | 바꾼 hook | 8 round | test (v0 139) | 판정 |
+| 주차 | 폴더 | 논문 | 바꾼 hook | 8 round | test (교체 전 데이터, v0 139) | 판정 |
 |---|---|---|---|---|---|---|
 | 3 | `w3_self_refine` | Self-Refine (2303.17651) | `propose`, `build_prompt` | accept 1/8, 73→77 | 146 | 조건부 |
 | 6 | `w6_judge_screen_gain` | LLM-as-a-Judge (2306.05685) + RM overoptimization (2210.10760) | `review_patch`, `after_screen` | accept 1/8, 71→76 | 148 | judge 실패 · screen_gain 유효 |
