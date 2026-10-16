@@ -12,26 +12,38 @@ n_test: 200
 n_pool: 300
 weeks:
   3:
-    owner: Sonnet 3주차 담당
-    method: 'Self-Refine: 비평 기준(조건·논리 체크리스트)을 명시하고 patch 자기 비평→재작성'
-    want: {tags: {multi_cond: 10}, v0: {row_mismatch: 15}}
+    owner: 3주차 담당(가상)
+    paper: 'STaR: Self-Taught Reasoner (Bootstrapping Reasoning With Reasoning) https://arxiv.org/abs/2203.14465'
+    abstract: if the generated answers are wrong, try again to generate a rationale given the correct answer; fine-tune on all the rationales that ultimately yielded correct answers; repeat
+    method: diagnose가 실패 SQL에 정답(expected result)을 주고 "왜 틀렸는지" rationale을 역산하게 하고, build_prompt는 그렇게 만든 rationale 중 실제로 accept된 것만 모아 few-shot으로 축적해 다음 propose에 재사용한다.
+    want: {tags: {nested: 5}, v0: {exec_error: 8, row_mismatch: 10}}
   4:
-    owner: Sonnet 4주차 담당
-    method: 'Reflexion: diagnose가 실행 오류를 뽑아 build_prompt가 ''이전 실패 원인''으로 되먹임'
-    want: {v0: {exec_error: 20}}
+    owner: 4주차 담당(가상)
+    paper: 'Reflexion: Language Agents with Verbal Reinforcement Learning https://arxiv.org/abs/2303.11366'
+    abstract: Reflexion agents verbally reflect on task feedback signals, then maintain their own reflective text in an episodic memory buffer to induce better decision-making in subsequent trials.
+    method: diagnose가 fix 노드의 exec_error 트레이스를 자연어 reflection으로 요약해 메모리 버퍼에 누적하고, build_prompt는 1회성이 아니라 여러 라운드에 걸쳐 쌓인 reflection 전체를 다음 propose 입력에 포함시켜 patch를 다시 쓰게 한다.
+    want: {v0: {exec_error: 12}}
   5:
-    owner: Sonnet 5주차 담당
-    method: 'STaR rationalization: 실행 오류 힌트로 SQL 재생성 (exec_error·missing_cols)'
-    want: {v0: {exec_error: 20, missing_cols: 5}}
+    owner: 5주차 담당(가상)
+    paper: 'R-Zero: Self-Evolving Reasoning LLM from Zero Data https://arxiv.org/abs/2508.05004'
+    abstract: the Challenger is rewarded for proposing tasks near the edge of the Solver capability, and the Solver is rewarded for solving increasingly challenging tasks posed by the Challenger. This process yields a targeted, self-improving curriculum without any pre-existing tasks and labels.
+    method: 'diagnose: 실패 문제를 난이도(hardness)로 스코어링해 v0 역량의 경계(= medium/hard 중 아주 어렵지도 쉽지도 않은 문제)에 가까운 것부터 우선 선별해 patch 타겟 큐에 올린다.'
+    want: {}
   6:
-    owner: Sonnet 6주차 담당
-    method: 'LLM-as-a-Judge: review_patch judge에 오류 유형(행 불일치·열 순서·열 과다) 분류 rubric'
-    want: {v0: {col_order: 8, extra_cols: 5, row_mismatch: 10}}
+    owner: 6주차 담당(가상)
+    paper: Let's Verify Step by Step https://arxiv.org/abs/2305.20050
+    abstract: we conduct our own investigation, finding that process supervision significantly outperforms outcome supervision for training models to solve problems from the challenging MATH dataset.
+    method: diagnose가 최종 exec 성공여부(outcome)만 보지 않고 select_schema(스키마/컬럼 선택)→generate(SQL 생성)→execute 각 단계별로 실패 지점을 분리 채점해 build_prompt에 넘김. missing_cols·extra_cols는 select_schema 단계의 오류, col_order는 generate 단계의 오류로 서로 다르게 분류되므로, propose가 그 단계만 고치는 patch를 만들 수 있음.
+    want: {v0: {col_order: 5, extra_cols: 10, missing_cols: 5}}
   7:
-    owner: Sonnet 7주차 담당
-    method: 'AlphaEvolve: 평가 피드백(실행 오류)을 patch prompt에 직접 넣음'
-    want: {v0: {exec_error: 15}}
+    owner: 7주차 담당(가상)
+    paper: AlphaEvolve arXiv 2506.13131
+    abstract: we present AlphaEvolve, an evolutionary coding agent that substantially enhances capabilities of state-of-the-art LLMs on highly challenging tasks" — "The system uses an autonomous pipeline of language models that iteratively refine algorithms through evolutionary feedback.
+    method: 'build_prompt: 단일 부모 patch가 아니라 과거 accept된 patch 여러 개(program database, 서로 다른 혈통)를 샘플링해 프롬프트에 함께 넣어 propose가 이전 시도들을 조합·개선하게 함.'
+    want: {}
   8:
-    owner: Sonnet 8주차 담당
-    method: 'Unfireable safety kernel: review_patch 금지 행동 체크리스트 (데이터 유형과 무관)'
+    owner: 8주차 담당(가상)
+    paper: 'The Unfireable Safety Kernel: Execution-Time AI Alignment for AI Agents and Other Escapable AI Systems https://arxiv.org/abs/2606.26057'
+    abstract: 'We identify four properties that an authorization mechanism must satisfy for architectural control rather than for cooperative requests: process separation, pre-action enforcement on a structurally only path, fail-closed at both the request and system levels, and externalized signed evidence verifiable outside the controlled system''s trust boundary.'
+    method: 'review_patch: patch 승인 전, propose가 접근 못 하는 별도 프로세스가 patch의 실행 결과를 독립적으로 재실행·검증하고(외부 서명 증거), 검증 불가/불일치 시 fail-closed로 거절 — 자기보고 성공을 신뢰하던 경로를 구조적으로 차단'
     want: {}
