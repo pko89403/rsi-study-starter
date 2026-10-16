@@ -187,7 +187,7 @@ hook 안에서 할 수 있는 것:
 
 고정 파일은 세 겹으로 지킨다.
 
-- **코딩 어시스턴트 차단:** `.claude/settings.json`이 Claude Code의 Edit/Write 도구로 고정 파일을 고치는 것을 막는다. 셸 명령(`sed -i`, 리다이렉션)까지 막지는 못한다. `AGENTS.md`(Codex·Gemini CLI가 읽음)에 같은 목록이 있다(권고).
+- **코딩 어시스턴트 차단:** `.claude/settings.json`이 Claude Code의 Edit/Write 도구로 고정 파일을 고치는 것을 막는다. 셸 명령(`sed -i`, 리다이렉션)까지 막지는 못한다. 2026-10-17 Claude Code 2.1.302에서 고정 파일 10곳 Edit/Write 차단, `hooks/`·`methods/` 허용을 확인했다. `AGENTS.md`(Codex·Gemini CLI가 읽음)에 같은 목록이 있다(권고).
 - **실행 거부:** `make round`·`make test`·`make meta-*`는 시작할 때 고정 파일(채점용 SQLite 포함)을 origin의 `ruler-vN` tag와 비교한다. 다르면 실행하지 않는다. tag는 origin에서 자동으로 받아 온다.
   일부러 바꾼 경우(B)에만 `RULER_OVERRIDE=1 make round`로 돌리고, `rounds.jsonl`·test 결과·`improver_ledger.jsonl`에 `ruler: override`가 남는다. tag가 없으면 `ruler: skipped`로 남는다. 그 주 결과는 "전제 조건"에 적고 `make results`가 표시한다.
 - **기록:** 고정 파일 hash(`anchors_sha`)와 모델 id가 round마다, test 결과마다 남는다. `make round` 도중에 바뀌면 loop가 멈춘다.
