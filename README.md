@@ -92,7 +92,8 @@ make meta-adopt              # 수정안 채택 (본인이 정한다)
 | `scripts/` | test 평가, 결과 표, Improver LLM 후보 측정(`probe_code_block`) | — |
 | `examples/` | 논문 메소드를 hook으로 구현해 실제로 돌려 본 예시(3·6·7·8주차)와 실측 결과 | 참고용 (복사해서 씀) |
 | `scripts/split_spec.yaml` | 평가 데이터 구성 명세. 3~8주차 담당자가 자기 method에 필요한 문제 유형을 적는다 ([wiki 데이터 구성](https://github.com/pko89403/rsi-study-starter/wiki/데이터-구성)) | 주차 담당자 (PR) |
-| `scripts/make_catalog.py`, `make_splits.py` | Spider 후보에 v0를 돌려 유형을 붙이고, 명세대로 `data/`를 만든다 | 운영자 |
+| `scripts/make_catalog.py`, `make_splits.py` | Spider 후보에 v0를 돌려 유형을 붙이고, 명세대로 `data/`를 만든다 (validation·test 같은 비율) | 운영자 |
+| `scripts/gold_excluded.json` | 운영자가 검토한 gold 오류 70개와 사유. 데이터에 넣지 않는다 | 운영자 |
 
 ### 2-1. SQL agent의 모양
 
