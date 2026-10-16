@@ -8,7 +8,7 @@
 - 주차 want는 validation 최소 개수. test는 n_test/n_val 배. 남는 자리는 난이도 비율대로 채운다.
 """
 from __future__ import annotations
-import argparse, json, random
+import argparse, json, random, sys
 from collections import Counter
 from pathlib import Path
 import yaml
@@ -49,9 +49,9 @@ def compose(items: list[dict], n: int, qs: list[tuple[str, str, int]], rng: rand
         if have < want:
             notes.append(f"{key}={val}: {have}/{want} (후보 부족)")
     rest = [it for it in items if it not in out and it["twin"] not in used_twin]
-    by_h = Counter(it["hardness"] for it in items)
-    for h, cnt in by_h.items():   # 난이도 비율 유지
-        need = round((n - len(out)) * cnt / len(items))
+    by_h = Counter(it["hardness"] for it in items); left = n - len(out)
+    for h, cnt in by_h.items():   # 남은 자리를 난이도 비율대로
+        need = round(left * cnt / len(items))
         for it in [r for r in rest if r["hardness"] == h][:need]:
             if len(out) < n and it["twin"] not in used_twin:
                 take(it)
@@ -101,5 +101,16 @@ def main() -> None:
     assert not (val_ids & {i["id"] for i in pool}) and not ({i["db_id"] for i in val} & {i["db_id"] for i in test})
 
 
+def selfcheck() -> None:
+    items = [{"id": f"t{i}", "twin": f"g{i // 2}", "v0": "exec_error" if i < 10 else "ok", "tags": ["join"] if i % 3 == 0 else [],
+              "hardness": ["easy", "hard"][i % 2]} for i in range(200)]
+    out, notes = compose(items, 50, [("v0", "exec_error", 5), ("v0", "empty", 1)], random.Random(0))
+    assert len(out) == 50 and len({i["twin"] for i in out}) == 50                      # 쌍둥이 그룹당 하나
+    assert sum(i["v0"] == "exec_error" for i in out) == 5                              # 후보 10개(그룹 5개)라 5개가 상한
+    assert notes == ["v0=empty: 0/1 (후보 부족)"]
+    assert quotas({"weeks": {3: {"want": {"v0": {"ok": 4}}}, 4: {"want": {"v0": {"ok": 9}}}, 5: {}}}, 2.0) == [("v0", "ok", 18)]
+    print("splits ok")
+
+
 if __name__ == "__main__":
-    main()
+    selfcheck() if sys.argv[1:] == ["selfcheck"] else main()

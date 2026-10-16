@@ -847,6 +847,34 @@
   "hardness": "extra"
  },
  {
+  "id": "dev_0032",
+  "db_id": "concert_singer",
+  "question": "What are the names of all stadiums that did not have a concert in 2014?",
+  "gold_sql": "SELECT name FROM stadium EXCEPT SELECT T2.name FROM concert AS T1 JOIN stadium AS T2 ON T1.stadium_id  =  T2.stadium_id WHERE T1.year  =  2014",
+  "hardness": "extra"
+ },
+ {
+  "id": "dev_0759",
+  "db_id": "world_1",
+  "question": "What languages are only used by a single country with a republic government?",
+  "gold_sql": "SELECT T2.Language FROM country AS T1 JOIN countrylanguage AS T2 ON T1.Code  =  T2.CountryCode WHERE T1.GovernmentForm  =  \"Republic\" GROUP BY T2.Language HAVING COUNT(*)  =  1",
+  "hardness": "extra"
+ },
+ {
+  "id": "dev_0426",
+  "db_id": "museum_visit",
+  "question": "What is the name of the visitor who visited both a museum opened before 2009 and a museum opened after 2011?",
+  "gold_sql": "SELECT t1.name FROM visitor AS t1 JOIN visit AS t2 ON t1.id  =  t2.visitor_id JOIN museum AS t3 ON t3.Museum_ID  =  t2.Museum_ID WHERE t3.open_year  <  2009 INTERSECT SELECT t1.name FROM visitor AS t1 JOIN visit AS t2 ON t1.id  =  t2.visitor_id JOIN museum AS t3 ON t3.Museum_ID  =  t2.Museum_ID WHERE t3.open_year  >  2011",
+  "hardness": "extra"
+ },
+ {
+  "id": "dev_0939",
+  "db_id": "dog_kennels",
+  "question": "Give me the description of the treatment type whose total cost is the lowest.",
+  "gold_sql": "SELECT T1.treatment_type_description FROM Treatment_types AS T1 JOIN Treatments AS T2 ON T1.treatment_type_code  =  T2.treatment_type_code GROUP BY T1.treatment_type_code ORDER BY sum(cost_of_treatment) ASC LIMIT 1",
+  "hardness": "extra"
+ },
+ {
   "id": "dev_0719",
   "db_id": "world_1",
   "question": "How long is the people’s average life expectancy in Central Africa?",
@@ -994,76 +1022,6 @@
   "hardness": "easy"
  },
  {
-  "id": "dev_0881",
-  "db_id": "network_1",
-  "question": "Which grades have 4 or more high schoolers?",
-  "gold_sql": "SELECT grade FROM Highschooler GROUP BY grade HAVING count(*)  >=  4",
-  "hardness": "hard"
- },
- {
-  "id": "dev_1024",
-  "db_id": "singer",
-  "question": "Show the names of singers and the total sales of their songs.",
-  "gold_sql": "SELECT T1.Name ,  sum(T2.Sales) FROM singer AS T1 JOIN song AS T2 ON T1.Singer_ID  =  T2.Singer_ID GROUP BY T1.Name",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0667",
-  "db_id": "poker_player",
-  "question": "What is the money rank of the tallest poker player?",
-  "gold_sql": "SELECT T2.Money_Rank FROM people AS T1 JOIN poker_player AS T2 ON T1.People_ID  =  T2.People_ID ORDER BY T1.Height DESC LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0478",
-  "db_id": "wta_1",
-  "question": "What are the codes of countries with more than 50 players?",
-  "gold_sql": "SELECT country_code FROM players GROUP BY country_code HAVING count(*)  >  50",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0914",
-  "db_id": "network_1",
-  "question": "Find the average grade of all students who have some friends.",
-  "gold_sql": "SELECT avg(grade) FROM Highschooler WHERE id IN (SELECT T1.student_id FROM Friend AS T1 JOIN Highschooler AS T2 ON T1.student_id  =  T2.id)",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0448",
-  "db_id": "wta_1",
-  "question": "What are the names of players who won in both 2013 and 2016?",
-  "gold_sql": "SELECT winner_name FROM matches WHERE YEAR  =  2013 INTERSECT SELECT winner_name FROM matches WHERE YEAR  =  2016",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0767",
-  "db_id": "world_1",
-  "question": "How many people live in countries that do not speak English?",
-  "gold_sql": "SELECT sum(Population) FROM country WHERE Name NOT IN (SELECT T1.Name FROM country AS T1 JOIN countrylanguage AS T2 ON T1.Code  =  T2.CountryCode WHERE T2.Language  =  \"English\")",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0423",
-  "db_id": "museum_visit",
-  "question": "Find the name and age of the visitor who bought the most tickets at once.",
-  "gold_sql": "SELECT t1.name ,  t1.age FROM visitor AS t1 JOIN visit AS t2 ON t1.id  =  t2.visitor_id ORDER BY t2.num_of_ticket DESC LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0664",
-  "db_id": "poker_player",
-  "question": "What are the names of poker players, ordered ascending by the number of final tables they have made?",
-  "gold_sql": "SELECT T1.Name FROM people AS T1 JOIN poker_player AS T2 ON T1.People_ID  =  T2.People_ID ORDER BY T2.Final_Table_Made",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0030",
-  "db_id": "concert_singer",
-  "question": "Show countries where a singer above age 40 and a singer below 30 are from.",
-  "gold_sql": "SELECT country FROM singer WHERE age  >  40 INTERSECT SELECT country FROM singer WHERE age  <  30",
-  "hardness": "hard"
- },
- {
   "id": "dev_0658",
   "db_id": "poker_player",
   "question": "Return the maximum final tables made across all poker players who have earnings below 200000.",
@@ -1162,13 +1120,6 @@
   "hardness": "easy"
  },
  {
-  "id": "dev_0445",
-  "db_id": "wta_1",
-  "question": "Find the name of tourney that has more than 10 matches.",
-  "gold_sql": "SELECT tourney_name FROM matches GROUP BY tourney_name HAVING count(*)  >  10",
-  "hardness": "hard"
- },
- {
   "id": "dev_0187",
   "db_id": "flight_2",
   "question": "How many airlines do we have?",
@@ -1183,11 +1134,81 @@
   "hardness": "easy"
  },
  {
-  "id": "dev_0964",
-  "db_id": "dog_kennels",
-  "question": "What are the arriving date and the departing date of all the dogs?",
-  "gold_sql": "SELECT date_arrived ,  date_departed FROM Dogs",
-  "hardness": "easy"
+  "id": "dev_0881",
+  "db_id": "network_1",
+  "question": "Which grades have 4 or more high schoolers?",
+  "gold_sql": "SELECT grade FROM Highschooler GROUP BY grade HAVING count(*)  >=  4",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_1024",
+  "db_id": "singer",
+  "question": "Show the names of singers and the total sales of their songs.",
+  "gold_sql": "SELECT T1.Name ,  sum(T2.Sales) FROM singer AS T1 JOIN song AS T2 ON T1.Singer_ID  =  T2.Singer_ID GROUP BY T1.Name",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0667",
+  "db_id": "poker_player",
+  "question": "What is the money rank of the tallest poker player?",
+  "gold_sql": "SELECT T2.Money_Rank FROM people AS T1 JOIN poker_player AS T2 ON T1.People_ID  =  T2.People_ID ORDER BY T1.Height DESC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0478",
+  "db_id": "wta_1",
+  "question": "What are the codes of countries with more than 50 players?",
+  "gold_sql": "SELECT country_code FROM players GROUP BY country_code HAVING count(*)  >  50",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0914",
+  "db_id": "network_1",
+  "question": "Find the average grade of all students who have some friends.",
+  "gold_sql": "SELECT avg(grade) FROM Highschooler WHERE id IN (SELECT T1.student_id FROM Friend AS T1 JOIN Highschooler AS T2 ON T1.student_id  =  T2.id)",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0448",
+  "db_id": "wta_1",
+  "question": "What are the names of players who won in both 2013 and 2016?",
+  "gold_sql": "SELECT winner_name FROM matches WHERE YEAR  =  2013 INTERSECT SELECT winner_name FROM matches WHERE YEAR  =  2016",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0767",
+  "db_id": "world_1",
+  "question": "How many people live in countries that do not speak English?",
+  "gold_sql": "SELECT sum(Population) FROM country WHERE Name NOT IN (SELECT T1.Name FROM country AS T1 JOIN countrylanguage AS T2 ON T1.Code  =  T2.CountryCode WHERE T2.Language  =  \"English\")",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0423",
+  "db_id": "museum_visit",
+  "question": "Find the name and age of the visitor who bought the most tickets at once.",
+  "gold_sql": "SELECT t1.name ,  t1.age FROM visitor AS t1 JOIN visit AS t2 ON t1.id  =  t2.visitor_id ORDER BY t2.num_of_ticket DESC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0664",
+  "db_id": "poker_player",
+  "question": "What are the names of poker players, ordered ascending by the number of final tables they have made?",
+  "gold_sql": "SELECT T1.Name FROM people AS T1 JOIN poker_player AS T2 ON T1.People_ID  =  T2.People_ID ORDER BY T2.Final_Table_Made",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0030",
+  "db_id": "concert_singer",
+  "question": "Show countries where a singer above age 40 and a singer below 30 are from.",
+  "gold_sql": "SELECT country FROM singer WHERE age  >  40 INTERSECT SELECT country FROM singer WHERE age  <  30",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0445",
+  "db_id": "wta_1",
+  "question": "Find the name of tourney that has more than 10 matches.",
+  "gold_sql": "SELECT tourney_name FROM matches GROUP BY tourney_name HAVING count(*)  >  10",
+  "hardness": "hard"
  },
  {
   "id": "dev_0898",
@@ -1195,6 +1216,76 @@
   "question": "Show the ids of high schoolers who have friends and are also liked by someone else.",
   "gold_sql": "SELECT student_id FROM Friend INTERSECT SELECT liked_id FROM Likes",
   "hardness": "hard"
+ },
+ {
+  "id": "dev_0853",
+  "db_id": "orchestra",
+  "question": "What is the record company used by the greatest number of orchestras?",
+  "gold_sql": "SELECT Record_Company FROM orchestra GROUP BY Record_Company ORDER BY COUNT(*) DESC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0469",
+  "db_id": "wta_1",
+  "question": "Find the average ranking for each player and their first name.",
+  "gold_sql": "SELECT avg(ranking) ,  T1.first_name FROM players AS T1 JOIN rankings AS T2 ON T1.player_id  =  T2.player_id GROUP BY T1.first_name",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0427",
+  "db_id": "museum_visit",
+  "question": "Find the number of visitors who did not visit any museum opened after 2010.",
+  "gold_sql": "SELECT count(*) FROM visitor WHERE id NOT IN (SELECT t2.visitor_id FROM museum AS t1 JOIN visit AS t2 ON t1.Museum_ID  =  t2.Museum_ID WHERE t1.open_year  >  2010)",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0764",
+  "db_id": "world_1",
+  "question": "What is average life expectancy in the countries where English is not the official language?",
+  "gold_sql": "SELECT avg(LifeExpectancy) FROM country WHERE Name NOT IN (SELECT T1.Name FROM country AS T1 JOIN countrylanguage AS T2 ON T1.Code  =  T2.CountryCode WHERE T2.Language  =  \"English\" AND T2.IsOfficial  =  \"T\")",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0904",
+  "db_id": "network_1",
+  "question": "Show the names of high schoolers who have likes, and numbers of likes for each.",
+  "gold_sql": "SELECT T2.name ,  count(*) FROM Likes AS T1 JOIN Highschooler AS T2 ON T1.student_id  =  T2.id GROUP BY T1.student_id",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0665",
+  "db_id": "poker_player",
+  "question": "What is the birth date of the poker player with the lowest earnings?",
+  "gold_sql": "SELECT T1.Birth_Date FROM people AS T1 JOIN poker_player AS T2 ON T1.People_ID  =  T2.People_ID ORDER BY T2.Earnings ASC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0884",
+  "db_id": "network_1",
+  "question": "Show the names of high school students and their corresponding number of friends.",
+  "gold_sql": "SELECT T2.name ,  count(*) FROM Friend AS T1 JOIN Highschooler AS T2 ON T1.student_id  =  T2.id GROUP BY T1.student_id",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0022",
+  "db_id": "concert_singer",
+  "question": "Show the stadium name and the number of concerts in each stadium.",
+  "gold_sql": "SELECT T2.name ,  count(*) FROM concert AS T1 JOIN stadium AS T2 ON T1.stadium_id  =  T2.stadium_id GROUP BY T1.stadium_id",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0814",
+  "db_id": "world_1",
+  "question": "Which language is spoken by the largest number of countries?",
+  "gold_sql": "SELECT LANGUAGE FROM countrylanguage GROUP BY LANGUAGE ORDER BY count(*) DESC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "dev_0964",
+  "db_id": "dog_kennels",
+  "question": "What are the arriving date and the departing date of all the dogs?",
+  "gold_sql": "SELECT date_arrived ,  date_departed FROM Dogs",
+  "hardness": "easy"
  },
  {
   "id": "dev_0731",
@@ -1211,13 +1302,6 @@
   "hardness": "easy"
  },
  {
-  "id": "dev_0853",
-  "db_id": "orchestra",
-  "question": "What is the record company used by the greatest number of orchestras?",
-  "gold_sql": "SELECT Record_Company FROM orchestra GROUP BY Record_Company ORDER BY COUNT(*) DESC LIMIT 1",
-  "hardness": "hard"
- },
- {
   "id": "dev_0981",
   "db_id": "dog_kennels",
   "question": "Find the number of owners who do not own any dogs at this moment.",
@@ -1225,25 +1309,11 @@
   "hardness": "medium"
  },
  {
-  "id": "dev_0032",
-  "db_id": "concert_singer",
-  "question": "What are the names of all stadiums that did not have a concert in 2014?",
-  "gold_sql": "SELECT name FROM stadium EXCEPT SELECT T2.name FROM concert AS T1 JOIN stadium AS T2 ON T1.stadium_id  =  T2.stadium_id WHERE T1.year  =  2014",
-  "hardness": "extra"
- },
- {
   "id": "dev_0890",
   "db_id": "network_1",
   "question": "Show the names of all of the high schooler Kyle's friends.",
   "gold_sql": "SELECT T3.name FROM Friend AS T1 JOIN Highschooler AS T2 ON T1.student_id  =  T2.id JOIN Highschooler AS T3 ON T1.friend_id  =  T3.id WHERE T2.name  =  \"Kyle\"",
   "hardness": "medium"
- },
- {
-  "id": "dev_0759",
-  "db_id": "world_1",
-  "question": "What languages are only used by a single country with a republic government?",
-  "gold_sql": "SELECT T2.Language FROM country AS T1 JOIN countrylanguage AS T2 ON T1.Code  =  T2.CountryCode WHERE T1.GovernmentForm  =  \"Republic\" GROUP BY T2.Language HAVING COUNT(*)  =  1",
-  "hardness": "extra"
  },
  {
   "id": "dev_1019",
@@ -1260,39 +1330,11 @@
   "hardness": "easy"
  },
  {
-  "id": "dev_0426",
-  "db_id": "museum_visit",
-  "question": "What is the name of the visitor who visited both a museum opened before 2009 and a museum opened after 2011?",
-  "gold_sql": "SELECT t1.name FROM visitor AS t1 JOIN visit AS t2 ON t1.id  =  t2.visitor_id JOIN museum AS t3 ON t3.Museum_ID  =  t2.Museum_ID WHERE t3.open_year  <  2009 INTERSECT SELECT t1.name FROM visitor AS t1 JOIN visit AS t2 ON t1.id  =  t2.visitor_id JOIN museum AS t3 ON t3.Museum_ID  =  t2.Museum_ID WHERE t3.open_year  >  2011",
-  "hardness": "extra"
- },
- {
-  "id": "dev_0939",
-  "db_id": "dog_kennels",
-  "question": "Give me the description of the treatment type whose total cost is the lowest.",
-  "gold_sql": "SELECT T1.treatment_type_description FROM Treatment_types AS T1 JOIN Treatments AS T2 ON T1.treatment_type_code  =  T2.treatment_type_code GROUP BY T1.treatment_type_code ORDER BY sum(cost_of_treatment) ASC LIMIT 1",
-  "hardness": "extra"
- },
- {
   "id": "dev_0948",
   "db_id": "dog_kennels",
   "question": "List the cost of each treatment and the corresponding treatment type description.",
   "gold_sql": "SELECT T1.cost_of_treatment ,  T2.treatment_type_description FROM Treatments AS T1 JOIN treatment_types AS T2 ON T1.treatment_type_code  =  T2.treatment_type_code",
   "hardness": "medium"
- },
- {
-  "id": "dev_0469",
-  "db_id": "wta_1",
-  "question": "Find the average ranking for each player and their first name.",
-  "gold_sql": "SELECT avg(ranking) ,  T1.first_name FROM players AS T1 JOIN rankings AS T2 ON T1.player_id  =  T2.player_id GROUP BY T1.first_name",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0427",
-  "db_id": "museum_visit",
-  "question": "Find the number of visitors who did not visit any museum opened after 2010.",
-  "gold_sql": "SELECT count(*) FROM visitor WHERE id NOT IN (SELECT t2.visitor_id FROM museum AS t1 JOIN visit AS t2 ON t1.Museum_ID  =  t2.Museum_ID WHERE t1.open_year  >  2010)",
-  "hardness": "hard"
  },
  {
   "id": "dev_0038",
@@ -1351,52 +1393,10 @@
   "hardness": "easy"
  },
  {
-  "id": "dev_0764",
-  "db_id": "world_1",
-  "question": "What is average life expectancy in the countries where English is not the official language?",
-  "gold_sql": "SELECT avg(LifeExpectancy) FROM country WHERE Name NOT IN (SELECT T1.Name FROM country AS T1 JOIN countrylanguage AS T2 ON T1.Code  =  T2.CountryCode WHERE T2.Language  =  \"English\" AND T2.IsOfficial  =  \"T\")",
-  "hardness": "hard"
- },
- {
   "id": "dev_0651",
   "db_id": "poker_player",
   "question": "List the final tables made and the best finishes of poker players.",
   "gold_sql": "SELECT Final_Table_Made ,  Best_Finish FROM poker_player",
   "hardness": "easy"
- },
- {
-  "id": "dev_0741",
-  "db_id": "world_1",
-  "question": "Give the name of the nation that uses the greatest amount of languages.",
-  "gold_sql": "SELECT T1.Name FROM country AS T1 JOIN countrylanguage AS T2 ON T1.Code  =  T2.CountryCode GROUP BY T1.Name ORDER BY COUNT(*) DESC LIMIT 1",
-  "hardness": "extra"
- },
- {
-  "id": "dev_0024",
-  "db_id": "concert_singer",
-  "question": "Show the stadium name and capacity with most number of concerts in year 2014 or after.",
-  "gold_sql": "SELECT T2.name ,  T2.capacity FROM concert AS T1 JOIN stadium AS T2 ON T1.stadium_id  =  T2.stadium_id WHERE T1.year  >=  2014 GROUP BY T2.stadium_id ORDER BY count(*) DESC LIMIT 1",
-  "hardness": "extra"
- },
- {
-  "id": "dev_0825",
-  "db_id": "orchestra",
-  "question": "What are the names of conductors, ordered by age?",
-  "gold_sql": "SELECT Name FROM conductor ORDER BY Age ASC",
-  "hardness": "medium"
- },
- {
-  "id": "dev_0904",
-  "db_id": "network_1",
-  "question": "Show the names of high schoolers who have likes, and numbers of likes for each.",
-  "gold_sql": "SELECT T2.name ,  count(*) FROM Likes AS T1 JOIN Highschooler AS T2 ON T1.student_id  =  T2.id GROUP BY T1.student_id",
-  "hardness": "hard"
- },
- {
-  "id": "dev_0665",
-  "db_id": "poker_player",
-  "question": "What is the birth date of the poker player with the lowest earnings?",
-  "gold_sql": "SELECT T1.Birth_Date FROM people AS T1 JOIN poker_player AS T2 ON T1.People_ID  =  T2.People_ID ORDER BY T2.Earnings ASC LIMIT 1",
-  "hardness": "hard"
  }
 ]

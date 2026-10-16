@@ -93,6 +93,9 @@ def main() -> None:
     if not pred.exists():
         subprocess.run([sys.executable, "-m", "sql_agent.run", "--problems", str(prob), "--out", str(pred)], check=True)
     preds = {o["id"]: o["sql"] for o in map(json.loads, pred.read_text().splitlines()) if o}
+    empty = sum(not preds.get(c["id"]) for c in cands)   # 빈 SQL = 호출 실패. 실행 오류로 세면 카탈로그가 통째로 틀어진다
+    if empty > len(cands) // 50:
+        sys.exit(f"빈 예측 {empty}/{len(cands)}: LLM 호출 실패로 보인다. .env(LLM_MODEL={os.environ.get('LLM_MODEL')}) 확인 후 {pred} 를 지우고 다시 실행")
     twins = Counter(c["twin"] for c in cands)
     with open(out, "w") as f:
         for c in cands:
@@ -104,5 +107,15 @@ def main() -> None:
         print(f"  hardness: {dict(Counter(c['hardness'] for c in cs))}  쌍둥이 그룹 {len({c['twin'] for c in cs})}")
 
 
+def selfcheck() -> None:
+    db, g = "concert_singer", "SELECT name, age FROM singer"
+    for pred, want in [(g, "ok"), ("SELECT age, name FROM singer", "col_order"), ("SELECT name, age, country FROM singer", "extra_cols"),
+                       ("SELECT name FROM singer", "missing_cols"), (g + " WHERE 1 = 0", "empty"), ("SELECT nope FROM singer", "exec_error"),
+                       ("", "exec_error"), (g + " LIMIT 1", "row_mismatch")]:
+        assert classify(db, g, pred) == want, (pred, classify(db, g, pred))
+    assert tags("SELECT count(*) FROM a JOIN b ON a.x = b.x WHERE y IN (SELECT y FROM c)") == ["join", "agg", "nested"]
+    print("catalog ok")
+
+
 if __name__ == "__main__":
-    main()
+    selfcheck() if sys.argv[1:] == ["selfcheck"] else main()

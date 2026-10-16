@@ -24,3 +24,5 @@ def require_llm() -> None:
     missing = [k for k in ("LLM_BASE_URL", "LLM_MODEL") if not os.environ.get(k)]
     if missing:
         sys.exit(f"환경 변수 {', '.join(missing)} 가 없습니다. starter/.env 파일에 적거나 export 하세요. (예: .env.example)")
+    if "gpt-4.1-nano" not in os.environ["LLM_MODEL"]:   # Azure 배포 이름이 다르면 같은 모델이어도 뜬다. 막지는 않는다
+        print(f"[env] LLM_MODEL={os.environ['LLM_MODEL']}: 평가 조건 3은 gpt-4.1-nano. 다른 모델이면 결과를 표에 그대로 넣을 수 없다", file=sys.stderr)

@@ -26,6 +26,9 @@ def main() -> None:
         os.unlink(tmp)
         if r.returncode != 0:
             print("agent failed:", r.stderr.strip().splitlines()[-1:]); sys.exit(1)
+        fails = [l for l in r.stdout.splitlines() if "failed:" in l]   # 문제별 예외는 빈 SQL(오답)로 채점된다
+        if len(fails) > len(problems) // 20:
+            sys.exit(f"{len(fails)}/{len(problems)} 문제에서 SQL agent가 실패해 점수를 믿을 수 없다 (.env의 키·모델 확인). 예: {fails[0][:200]}")
         res = evaluate(out, "data/test.json", cfg["db_dir"], cfg["sql_timeout_sec"])
         scores.append(res["correct"]); print(f"run {i+1}: {res['correct']}/{res['n']}")
         if i >= 1 and sorted(Path(out).read_text().splitlines()) == sorted(Path(f"logs/_test_pred_{i-1}.jsonl").read_text().splitlines()):
