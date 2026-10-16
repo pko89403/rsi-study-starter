@@ -88,6 +88,7 @@ make meta-adopt              # 수정안 채택 (본인이 정한다)
 | `data/test.json` | test. loop는 열지 않는다 | 아무도 |
 | `logs/rounds.jsonl` | round당 한 줄 | loop |
 | `scripts/` | test 평가, 결과 표, Improver LLM 후보 측정(`probe_code_block`) | — |
+| `examples/` | 논문 메소드를 hook으로 구현해 실제로 돌려 본 예시(3·6·7·8주차)와 실측 결과 | 참고용 (복사해서 씀) |
 | `scripts/split_spec.yaml` | 평가 데이터 구성 명세. 3~8주차 담당자가 자기 method에 필요한 문제 유형을 적는다 ([wiki 데이터 구성](https://github.com/pko89403/rsi-study-starter/wiki/데이터-구성)) | 주차 담당자 (PR) |
 | `scripts/make_catalog.py`, `make_splits.py` | Spider 후보에 v0를 돌려 유형을 붙이고, 명세대로 `data/`를 만든다 | 운영자 |
 
@@ -160,6 +161,8 @@ should_stop(ctx)                                ⑩ 일찍 멈출지            
 - Improver LLM 출력 상한은 `config.yaml`의 `improver_max_tokens`(기본 4096)다. 추론 모델을 쓰면 생각 토큰도 여기서 쓰므로 8192~16384로 올린다.
 
 ## 4. method를 넣는 법
+
+운영자가 후보 논문 메소드를 실제로 구현해 돌려 본 예시가 [`examples/`](examples/README.md)에 있다. 효과·실패 이유·비용이 적혀 있다.
 
 1. `hooks/` 안의 함수 하나(또는 둘)의 본문을 바꾼다. 시그니처는 그대로 둔다.
    hook에 안 들어가는 method는 아래 6의 B·C를 따른다.
