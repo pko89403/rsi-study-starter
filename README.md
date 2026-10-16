@@ -10,9 +10,9 @@
 
 설계 이유, 데이터 형식, 주차별 로드맵 같은 배경은 [위키](https://github.com/pko89403/rsi-study-starter/wiki)에 있다.
 
-![starter의 두 구성 요소: SQL agent는 문제를 풀고, Improver는 그 점수를 보고 EVOLVE-BLOCK을 고친다](docs/components.png)
+![세 층: 참가자가 Improver agent의 hook을 고치고, Improver agent가 SQL agent의 EVOLVE-BLOCK을 고친다](docs/components.png)
 
-**EVOLVE-BLOCK**은 Improver가 고칠 수 있는 유일한 코드 구간이다.
+**EVOLVE-BLOCK**은 Improver agent가 고칠 수 있는 유일한 코드 구간이다.
 
 - `# === EVOLVE-BLOCK-START: <이름> ===` ~ `# === EVOLVE-BLOCK-END ===` 주석으로 감싼다.
 - 세 개가 있다: `prompt`, `code`(`sql_agent/run.py`), `evaluator`(`evaluator/rules.py`).
@@ -60,14 +60,14 @@ make results W=1             # 그 주의 결과 표
 
 ## 2. 폴더
 
-![구성도: Improver(loop + hooks)가 SQL agent의 EVOLVE-BLOCK을 고치고, evaluator가 validation으로 채점한다. test는 loop 밖](docs/structure.png)
+![구성도: Improver agent(loop + hooks + Improver LLM)가 SQL agent의 EVOLVE-BLOCK을 고치고, evaluator가 validation으로 채점한다. test는 loop 밖](docs/structure.png)
 
 | 경로 | 하는 일 | 누가 고치나 |
 |---|---|---|
-| `sql_agent/run.py` | SQL agent (LangGraph, 아래 2-1) | Improver (`editable_blocks`에 적힌 EVOLVE-BLOCK만) |
+| `sql_agent/run.py` | SQL agent (LangGraph, 아래 2-1) | Improver agent (`editable_blocks`에 적힌 EVOLVE-BLOCK만) |
 | `sql_agent/llm.py`, `schema.py` | LLM 호출, 스키마 텍스트 | 사람 |
 | `evaluator/evaluate.py` | SQL 실행 결과를 정답과 비교 | 고정 |
-| `evaluator/rules.py` | validation 채점 규칙. `evaluator` EVOLVE-BLOCK | Improver (6주차에 `editable_blocks`에 추가한 뒤) |
+| `evaluator/rules.py` | validation 채점 규칙. `evaluator` EVOLVE-BLOCK | Improver agent (6주차에 `editable_blocks`에 추가한 뒤) |
 | `evaluator/rules_v0.py` | test 채점 규칙 (고정 복사본) | 고정 |
 | `loop/run.py` | round loop. LangGraph `StateGraph` (아래 3) | 고정 (B는 예외, 아래 6) |
 | `loop/patch.py` | EVOLVE-BLOCK 교체, guard | 고정 |
@@ -76,7 +76,7 @@ make results W=1             # 그 주의 결과 표
 | `hooks/*.py` | 결정 지점 10개. **매주 method는 이 중 하나의 본문을 바꾼다** | 각자 |
 | `data/test.json` | test. loop는 열지 않는다 | 아무도 |
 | `logs/rounds.jsonl` | round당 한 줄 | loop |
-| `scripts/` | test 평가, 결과 표, 분할 생성(운영자), Improver 후보 모델 측정(`probe_code_block`) | — |
+| `scripts/` | test 평가, 결과 표, 분할 생성(운영자), Improver LLM 후보 측정(`probe_code_block`) | — |
 
 ### 2-1. SQL agent의 모양
 
@@ -171,14 +171,14 @@ round, parent, 현재 EVOLVE-BLOCK 내용, before 평가 결과(문제별 정오
 
 ## 5. 주차별로 `editable_blocks`에 추가하는 것
 
-`config.yaml`의 `editable_blocks`에 블록 이름을 더하면 Improver가 그 블록을 고칠 수 있다.
+`config.yaml`의 `editable_blocks`에 블록 이름을 더하면 Improver agent가 그 블록을 고칠 수 있다.
 
 주차별 예와 4주차 `code` 블록 예(노드 본문·`route`)는 위키 [주차별 로드맵](https://github.com/pko89403/rsi-study-starter/wiki/주차별-로드맵)에 있다.
 
 ## 6. 고정인 것과 자유인 것
 
 전원이 같게 유지하는 것은 아래 **평가 조건 5개**다.
-이것만 지키면 사람마다 다른 Improver를 같은 표에 놓을 수 있다.
+이것만 지키면 사람마다 다른 Improver agent를 같은 표에 놓을 수 있다.
 
 1. 데이터: `data/validation.json`·`test.json`·`fewshot_pool.json` (6주차 전까지)
 2. test 채점: `scripts/test_eval.py` + `evaluator/rules_v0.py`
@@ -209,7 +209,7 @@ method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 
   - `sql_agent/tools.py`처럼 EVOLVE-BLOCK 밖에 helper를 만든다.
   - `sql_agent/run.py` 위쪽에 import 한 줄을 넣는다.
   - `hooks/build_prompt.py`의 `CONTRACTS["code"]` 이름 목록에 등록한다.
-  - Improver가 그것을 쓰는 patch를 내게 한다.
+  - Improver LLM이 그것을 쓰는 patch를 내게 한다.
 - 기록: SQL agent 기준선이 바뀌므로 "전" 점수를 다시 잰다. "전제 조건"에 적는다.
 
 **D. 평가 조건 5개를 바꿔야 함**
@@ -220,9 +220,9 @@ method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 
 
 참고:
 
-- **C의 선**: 사람이 SQL agent를 고치는 것과 Improver가 고치는 것을 섞지 않는다.
+- **C의 선**: 사람이 SQL agent를 고치는 것과 Improver agent가 고치는 것을 섞지 않는다.
   - helper 추가(사람)는 SQL agent 기준선을 바꾸는 변경이다. "전" 점수 재측정으로 분리한다.
-  - 그 helper를 노드 본문에서 쓰는 것(Improver)이 method 효과다. 표의 전/후 차이로 읽는다.
+  - 그 helper를 노드 본문에서 쓰는 것(Improver agent)이 method 효과다. 표의 전/후 차이로 읽는다.
   - helper를 추가하면서 `code` 블록 본문까지 사람이 바꾸면 이 분리가 깨진다.
   - 배선(`make_graph`)을 사람이 바꾸는 것도 C다.
 - **hook이 못 하는 것**: 단계 사이에 끼어들기, 단계 순서 바꾸기, 여러 SQL agent를 동시에 유지하기(population), SQL agent가 쓸 수 있는 이름 늘리기. 이것들이 B·C다.
@@ -245,9 +245,9 @@ method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 
 ## 8. 자주 막히는 곳
 
 - **LM Studio**: 모델을 context 16384로 로드한다(`lms load <모델> -c 16384`).
-  기본 context(8192)면 Improver 프롬프트와 출력이 넘칠 수 있다. 자세한 것은 위키 [로컬 LM Studio](https://github.com/pko89403/rsi-study-starter/wiki/로컬-LM-Studio).
+  기본 context(8192)면 Improver LLM 프롬프트와 출력이 넘칠 수 있다. 자세한 것은 위키 [로컬 LM Studio](https://github.com/pko89403/rsi-study-starter/wiki/로컬-LM-Studio).
 - **agent timeout**: `config.yaml`의 `agent_timeout_sec`(기본 1800초). 100문제 × 모델 속도.
 - **round 하나가 몇 분씩 걸림**: Improver LLM이 같은 내용을 반복하다 `improver_max_tokens`까지 쓰는 경우다. 7B에서 가끔 생긴다.
   그 patch는 parse 실패로 거부된다. 상한을 올려도 결과는 같고 시간만 늘어난다.
-- **점수가 전혀 안 움직임**: 7B Improver에서는 흔하다. 거부가 많은 것이 정상이다.
-  Improver 모델 교체는 평가 조건 3을 바꾸는 일이라 전원이 함께 정한다.
+- **점수가 전혀 안 움직임**: 7B Improver LLM에서는 흔하다. 거부가 많은 것이 정상이다.
+  Improver LLM 교체는 평가 조건 3을 바꾸는 일이라 전원이 함께 정한다.
