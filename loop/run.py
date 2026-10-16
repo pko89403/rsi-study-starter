@@ -108,25 +108,25 @@ def precheck(ctx: RoundContext, pt: P.Patch | None, editable: list[str], archive
 def propose_valid(ctx: RoundContext, editable: list[str], archive: Archive) -> tuple[P.Patch | None, list[str], int, int]:
     """build_prompt → propose. 평가 전 거부되면 이유를 붙여 최대 MAX_REASK번 다시 묻는다.
     round당 평가하는 patch는 1개 (후보가 여럿이면 처음 통과한 것). 반환: (patch, 거부 이유들, 재요청 수, LLM 호출 수)."""
-    msgs, reasons, calls = build_prompt(ctx), [], 0
+    msgs, reasons, n0 = build_prompt(ctx), [], ctx.llm_calls
     for attempt in range(MAX_REASK + 1):
-        patches = propose(ctx, msgs); calls += max(1, len(patches))
+        patches = propose(ctx, msgs)
         now = []
         for p in patches or [None]:
             pt, why = precheck(ctx, p, editable, archive)
             if pt:
-                return pt, reasons, attempt, calls
+                return pt, reasons, attempt, ctx.llm_calls - n0
             now.append(why)
         reasons += now
         msgs = msgs + [{"role": "user", "content": f"Your answer was rejected before evaluation: {'; '.join(now)}. "
                         f"Patch block '{ctx.block_name}' with one real change. Same answer format."}]
-    return None, reasons, MAX_REASK, calls
+    return None, reasons, MAX_REASK, ctx.llm_calls - n0
 
 
 class RoundState(TypedDict, total=False):
     rnd: int
     t0: float
-    calls: int
+    calls: int            # SQL agent가 푼 문제 수 (subprocess라 호출을 직접 못 센다). Improver 호출은 ctx.llm_calls
     parent: str
     before: dict
     bpreds: dict
@@ -192,12 +192,12 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
 
     def diagnose_node(s: RoundState) -> dict:
         s["ctx"].diagnosis = diagnose(s["ctx"])
-        return {"calls": s["calls"] + 1}
+        return {}
 
     def propose_node(s: RoundState) -> dict:
         ctx, before = s["ctx"], s["before"]
-        pt, reasons, resamples, n = propose_valid(ctx, editable, archive)
-        calls = s["calls"] + n
+        pt, reasons, resamples, _ = propose_valid(ctx, editable, archive)
+        calls = s["calls"]
         entry = {"round": s["rnd"], "week": cfg["week"], "parent": s["parent"], "commit": None, "hook_changed": cfg.get("hook_changed", "none"),
                  "diagnosis": ctx.diagnosis[:200], "block": ctx.block_name, "reason": None,
                  "screen": None, "full": {"n": before["n"], "before": before["correct"], "after": None},
@@ -262,8 +262,8 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
         fres, ferr, fpreds = eval_on(problems, cfg, "full")
         calls = s["calls"] + len(problems)
         if ferr:
-            e["rejected_by"] = "error"; archive.checkout(s["parent"], evolve_files)
-            return {"calls": calls, "halt": True}
+            archive.checkout(s["parent"], evolve_files)
+            return {"calls": calls, **reject(s, "error", ferr)}
         cache[sha] = (fres, fpreds); archive.record(sha, fres["correct"], s["parent"])
         e["full"]["after"] = fres["correct"]; ctx.after = fres; ctx.patch = s["pt"]
         hook_ok = bool(accept(ctx, s["before"]["correct"], fres["correct"], s["pt"]))
@@ -280,7 +280,7 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
     def after_eval_node(s: RoundState) -> dict:
         ctx, e = s["ctx"], s["entry"]
         after_eval(ctx)
-        e["llm_calls"] = s["calls"]; e["seconds"] = round(time.time() - s["t0"], 1)
+        e["improver_calls"] = ctx.llm_calls; e["llm_calls"] = s["calls"] + ctx.llm_calls; e["seconds"] = round(time.time() - s["t0"], 1)
         with open(log_path, "a") as f:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
         print(f"[round {s['rnd']}] parent={s['parent']} block={e['block']} commit={e['commit']} full {e['full']['before']}->{e['full']['after']} "
@@ -317,6 +317,32 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
     return g.compile()
 
 
+def data_sha(cfg: dict) -> str:
+    """점수의 기준: validation 문제와 채점 코드. 이게 바뀌면 이전 점수와 비교할 수 없다."""
+    h = hashlib.sha256()
+    for f in (cfg["validation"], "evaluator/rules_v0.py", "evaluator/evaluate.py"):
+        h.update(Path(f).read_bytes())
+    return h.hexdigest()[:12]
+
+
+def reset_if_data_changed(cfg: dict) -> str:
+    """archive.json의 점수가 다른 데이터로 잰 것이면, 기록을 logs/old-<이전 sha>/로 옮기고 champion 코드에서 다시 잰다."""
+    cur, state_file = data_sha(cfg), ROOT / "logs" / "archive.json"
+    if not state_file.exists():
+        return cur
+    state = json.loads(state_file.read_text())
+    old = state.get("data_sha")
+    if old == cur or not state.get("scores"):
+        return cur
+    dst = ROOT / "logs" / f"old-{old or 'unknown'}"; dst.mkdir(parents=True, exist_ok=True)
+    for name in (Path(cfg["log"]).name, "improver_ledger.jsonl", "archive.json", "rejected"):
+        if (ROOT / "logs" / name).exists():
+            (ROOT / "logs" / name).rename(dst / name)
+    state_file.write_text(json.dumps({"scores": {}, "parents": {}, "best": state.get("best"), "seen": [], "data_sha": cur}, indent=1))
+    print(f"[setup] 데이터·채점이 바뀜 ({old} -> {cur}): 이전 기록을 {dst.relative_to(ROOT)}/ 로 옮기고 champion {state.get('best')}부터 다시 잰다")
+    return cur
+
+
 def setup(config: str = "config.yaml") -> tuple[dict, Archive]:
     os.chdir(ROOT)
     require_llm()
@@ -324,7 +350,9 @@ def setup(config: str = "config.yaml") -> tuple[dict, Archive]:
     Path(cfg["log"]).parent.mkdir(exist_ok=True)
     os.environ.setdefault("LLM_CACHE", str(ROOT / "logs" / "llm_cache.sqlite"))   # temperature 0 응답 캐시. LLM_CACHE= 로 끈다. test_eval은 안 씀
     K.require_ruler()
+    dsha = reset_if_data_changed(cfg)
     archive = Archive(ROOT)
+    archive.state["data_sha"] = dsha
     if not archive.repo.head.is_valid():
         archive.commit("v0", cfg["evolve_files"])
     return cfg, archive

@@ -14,7 +14,7 @@ FIXED_FILES = ["data/validation.json", "data/test.json", "data/fewshot_pool.json
                "loop/run.py", "loop/patch.py", "loop/archive.py", "loop/kernel.py", "loop/meta.py", "loop/context.py", "loop/env.py",
                ".claude/settings.json", "AGENTS.md", "CLAUDE.md", ".gemini/settings.json"]
 FIXED_DIRS = ["data/database"]   # 채점용 SQLite. 내용이 바뀌면 점수가 바뀐다
-RULER_TAG = "ruler-v6"   # 고정 파일의 기준 commit에 운영자가 단 tag. 고정 파일을 바꿀 때마다 번호를 올리고 `make ruler`
+RULER_TAG = "ruler-v7"   # 고정 파일의 기준 commit에 운영자가 단 tag. 고정 파일을 바꿀 때마다 번호를 올리고 `make ruler`
 RULER_STATUS = "unchecked"   # require_ruler() 결과: ok | override | skipped | changed. round·test·meta 기록에 남는다
 IMPROVER_FILE = "improver/incumbent.py"
 WIDE_MARGIN = 4   # 많은 답이 바뀐 patch(프롬프트 수정 등)의 최소 순증. placebo 보정 전 기본값
@@ -45,10 +45,10 @@ def _git(root: Path, *args, timeout: int = 20) -> str | None:
 def check_ruler(root: Path = ROOT, remote: bool = True) -> tuple[str, str]:
     """고정 파일이 RULER_TAG(origin의 tag)와 같은지. 반환 (status, detail).
     status: ok / override(RULER_OVERRIDE=1로 실행, 기록됨) / skipped(tag 없음) / changed(다름 → 실행 거부).
-    로컬 tag가 origin과 다르거나 없으면 origin에서 강제로 받아 온다 (참가자는 origin tag를 못 바꾼다)."""
+    로컬에 tag가 없을 때만 origin에서 받아 온다. 운영자는 바꿀 때마다 tag 이름(번호)을 올리므로, 같은 이름의 tag는 다시 볼 필요가 없다."""
     ref = f"refs/tags/{RULER_TAG}"
     local = _git(root, "rev-parse", "-q", "--verify", ref)
-    if remote:
+    if remote and not local:
         ls = _git(root, "ls-remote", "--tags", "origin", RULER_TAG, timeout=15) or ""
         origin = next((l.split()[0] for l in ls.splitlines() if l.strip().endswith(ref)), None)
         if origin and origin != local:

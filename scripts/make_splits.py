@@ -111,6 +111,9 @@ def main() -> None:
     val_ids = {i["id"] for i in val}; val_twins = {i["twin"] for i in val}
     pool_c = [c for c in train if c["id"] not in val_ids and c["twin"] not in val_twins]
     pool, n3 = compose(pool_c, spec["n_pool"], [], rng)
+    # 선택 순서(할당량 먼저)가 그대로 파일에 남지 않게, 멤버십은 안 바꾸고 순서만 섞는다
+    for items, off in ((val, 1), (test, 2), (pool, 3)):
+        random.Random(spec["seed"] + off).shuffle(items)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     keep = ("id", "db_id", "question", "gold_sql", "hardness")
     for name, items in (("validation", val), ("test", test), ("fewshot_pool", pool)):

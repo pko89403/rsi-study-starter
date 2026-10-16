@@ -171,9 +171,9 @@ def evaluate(cfg: dict, archive, file: Path, n: int, seed0: int, min_parents: in
             for arm, vals in (("I", inc), ("C", ch)):
                 ctx = RoundContext(round=0, week=cfg["week"], config=copy.deepcopy(cfg), parent=pa, block_name=bname, block=blocks[bname],
                                    blocks=blocks, before=res, problems=view, predictions=preds, llm=llm.chat, improver=vals, seed=seed)
-                ctx.diagnosis = R.diagnose(ctx); calls += 1
+                ctx.diagnosis = R.diagnose(ctx)
                 prompt_h = hashlib.sha1(json.dumps(R.build_prompt(ctx), sort_keys=True).encode()).hexdigest()
-                pt, _, _, c = R.propose_valid(ctx, editable, _NoSeen()); calls += c
+                pt, _, _, _ = R.propose_valid(ctx, editable, _NoSeen()); calls += ctx.llm_calls
                 row[arm] = {"prompt": prompt_h, "patch": pt, "hash": R.patch_hash(pt) if pt else None}
             if row["I"]["prompt"] in seen_in:
                 continue   # 기존 버전 입력이 같은 상황은 하나로 센다

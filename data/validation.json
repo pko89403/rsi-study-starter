@@ -1,5 +1,89 @@
 [
  {
+  "id": "train_4510",
+  "db_id": "document_management",
+  "question": "Return the structure description of the document that has been accessed the fewest number of times.",
+  "gold_sql": "SELECT t2.document_structure_description FROM documents AS t1 JOIN document_structures AS t2 ON t1.document_structure_code  =  t2.document_structure_code GROUP BY t1.document_structure_code ORDER BY count(*) DESC LIMIT 1",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_6266",
+  "db_id": "ship_1",
+  "question": "Find the name of the ships that are steered by both a captain with Midshipman rank and a captain with Lieutenant rank.",
+  "gold_sql": "SELECT t1.name FROM ship AS t1 JOIN captain AS t2 ON t1.ship_id  =  t2.ship_id WHERE t2.rank  =  'Midshipman' INTERSECT SELECT t1.name FROM ship AS t1 JOIN captain AS t2 ON t1.ship_id  =  t2.ship_id WHERE t2.rank  =  'Lieutenant'",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_3120",
+  "db_id": "behavior_monitoring",
+  "question": "What are the line 1 and average monthly rentals of all student addresses?",
+  "gold_sql": "SELECT T1.line_1 ,  avg(T2.monthly_rental) FROM Addresses AS T1 JOIN Student_Addresses AS T2 ON T1.address_id  =  T2.address_id GROUP BY T2.address_id",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_4540",
+  "db_id": "document_management",
+  "question": "What are the different role codes for users, and how many users have each?",
+  "gold_sql": "SELECT count(*) ,  role_code FROM users GROUP BY role_code",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_2137",
+  "db_id": "company_1",
+  "question": "list the first and last names, and the addresses of all employees in the ascending order of their birth date.",
+  "gold_sql": "SELECT fname ,  lname ,  address FROM employee ORDER BY Bdate",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_4045",
+  "db_id": "student_1",
+  "question": "Show me the classrooms grade 5 is using.",
+  "gold_sql": "SELECT DISTINCT classroom FROM list WHERE grade  =  5",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_0281",
+  "db_id": "twitter_1",
+  "question": "Find the name and email of the user whose name contains the word ‘Swift’.",
+  "gold_sql": "SELECT name ,  email FROM user_profiles WHERE name LIKE '%Swift%'",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_4518",
+  "db_id": "document_management",
+  "question": "Give the section titles of the document with the name \"David CV\".",
+  "gold_sql": "SELECT t2.section_title FROM documents AS t1 JOIN document_sections AS t2 ON t1.document_code  =  t2.document_code WHERE t1.document_name  =  \"David CV\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_3877",
+  "db_id": "insurance_policies",
+  "question": "Tell me the the claim date and settlement date for each settlement case.",
+  "gold_sql": "SELECT Date_Claim_Made ,  Date_Claim_Settled FROM Settlements",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_6261",
+  "db_id": "ship_1",
+  "question": "Return the names and classes of ships that do not have a captain?",
+  "gold_sql": "SELECT name ,  CLASS FROM ship WHERE ship_id NOT IN (SELECT ship_id FROM captain)",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_3881",
+  "db_id": "insurance_policies",
+  "question": "What is the payment method that were used the least often?",
+  "gold_sql": "SELECT Payment_Method_Code FROM Payments GROUP BY Payment_Method_Code ORDER BY count(*) ASC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_3556",
+  "db_id": "music_1",
+  "question": "What is the id of the files that are available in the format of mp4 and a resolution smaller than 1000?",
+  "gold_sql": "SELECT f_id FROM files WHERE formats  =  \"mp4\" INTERSECT SELECT f_id FROM song WHERE resolution  <  1000",
+  "hardness": "hard"
+ },
+ {
   "id": "train_3582",
   "db_id": "music_1",
   "question": "What are the ids of all songs that are available on mp4 or have a higher resolution than 720?",
@@ -7,74 +91,60 @@
   "hardness": "hard"
  },
  {
-  "id": "train_6241",
-  "db_id": "ship_1",
-  "question": "What are the ranks of captains that have no captain that are in the Third-rate ship of the line class?",
-  "gold_sql": "SELECT rank FROM captain EXCEPT SELECT rank FROM captain WHERE CLASS  =  'Third-rate ship of the line'",
-  "hardness": "hard"
- },
- {
-  "id": "train_3625",
-  "db_id": "music_1",
-  "question": "Find the names of the artists who have produced English songs but have never received rating higher than 8.",
-  "gold_sql": "SELECT DISTINCT artist_name FROM song WHERE languages  =  \"english\" EXCEPT SELECT DISTINCT artist_name FROM song WHERE rating  >  8",
-  "hardness": "hard"
- },
- {
-  "id": "train_5398",
-  "db_id": "tracking_software_problems",
-  "question": "Find the products which have problems reported by both Lacey Bosco and Kenton Champlin?",
-  "gold_sql": "SELECT T2.product_name FROM problems AS T1 JOIN product AS T2 JOIN staff AS T3 ON T1.product_id = T2.product_id AND T1.reported_by_staff_id = T3.staff_id WHERE T3.staff_first_name = \"Lacey\" AND T3.staff_last_name = \"Bosco\" INTERSECT SELECT T2.product_name FROM problems AS T1 JOIN product AS T2 JOIN staff AS T3 ON T1.product_id = T2.product_id AND T1.reported_by_staff_id = T3.staff_id WHERE T3.staff_first_name = \"Kenton\" AND T3.staff_last_name = \"Champlin\"",
+  "id": "train_4526",
+  "db_id": "document_management",
+  "question": "What are the names of documents that do not have any images?",
+  "gold_sql": "SELECT document_name FROM documents EXCEPT SELECT t1.document_name FROM documents AS t1 JOIN document_sections AS t2 ON t1.document_code  =  t2.document_code JOIN document_sections_images AS t3 ON t2.section_id  =  t3.section_id",
   "hardness": "extra"
  },
  {
-  "id": "train_3553",
+  "id": "train_0286",
+  "db_id": "twitter_1",
+  "question": "Find the name and email for the users who have more than one follower.",
+  "gold_sql": "SELECT T1.name ,  T1.email FROM user_profiles AS T1 JOIN follows AS T2 ON T1.uid  =  T2.f1 GROUP BY T2.f1 HAVING count(*)  >  1",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_3620",
   "db_id": "music_1",
-  "question": "Find the names of the artists who are from UK and have produced English songs.",
-  "gold_sql": "SELECT artist_name FROM artist WHERE country  =  \"UK\" INTERSECT SELECT artist_name FROM song WHERE languages  =  \"english\"",
-  "hardness": "hard"
+  "question": "What are the top 3 artists with the largest number of songs in the language Bangla?",
+  "gold_sql": "SELECT T1.artist_name FROM artist AS T1 JOIN song AS T2 ON T1.artist_name  =  T2.artist_name WHERE T2.languages  =  \"bangla\" GROUP BY T2.artist_name ORDER BY count(*) DESC LIMIT 3",
+  "hardness": "extra"
  },
  {
-  "id": "train_4911",
-  "db_id": "store_product",
-  "question": "What is the name of the district with the smallest area?",
-  "gold_sql": "SELECT district_name FROM district ORDER BY city_area ASC LIMIT 1",
-  "hardness": "medium"
- },
- {
-  "id": "train_3116",
-  "db_id": "behavior_monitoring",
-  "question": "What are the id and zip code of the address with the highest monthly rental?",
-  "gold_sql": "SELECT T2.address_id ,  T1.zip_postcode FROM Addresses AS T1 JOIN Student_Addresses AS T2 ON T1.address_id  =  T2.address_id ORDER BY monthly_rental DESC LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "train_3531",
-  "db_id": "music_1",
-  "question": "What is the id of the longest song?",
-  "gold_sql": "SELECT f_id FROM files ORDER BY duration DESC LIMIT 1",
-  "hardness": "medium"
- },
- {
-  "id": "train_3541",
-  "db_id": "music_1",
-  "question": "What is the name of the artist who produced the shortest song?",
-  "gold_sql": "SELECT T1.artist_name FROM song AS T1 JOIN files AS T2 ON T1.f_id  =  T2.f_id ORDER BY T2.duration LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "train_3600",
-  "db_id": "music_1",
-  "question": "What is the maximum and minimum resolution of all songs that are approximately 3 minutes long?",
-  "gold_sql": "SELECT max(T2.resolution) ,  min(T2.resolution) FROM files AS T1 JOIN song AS T2 ON T1.f_id  =  T2.f_id WHERE T1.duration LIKE \"3:%\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_5696",
+  "id": "train_5749",
   "db_id": "dorm_1",
-  "question": "Find the capacity and gender type of the dorm whose name has substring ‘Donor’.",
-  "gold_sql": "SELECT student_capacity ,  gender FROM dorm WHERE dorm_name LIKE '%Donor%'",
-  "hardness": "easy"
+  "question": "How many female students live in Smith Hall?",
+  "gold_sql": "SELECT count(*) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.dorm_name  =  'Smith Hall' AND T1.sex  =  'F'",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_0992",
+  "db_id": "university_basketball",
+  "question": "Return the name of the team and the acc during the regular season for the school that was founded the earliest.",
+  "gold_sql": "SELECT t2.team_name ,  t2.ACC_Regular_Season FROM university AS t1 JOIN basketball_match AS t2 ON t1.school_id  =  t2.school_id ORDER BY t1.founded LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_4534",
+  "db_id": "document_management",
+  "question": "What is the description of the most popular role among users that have logged in?",
+  "gold_sql": "SELECT role_description FROM ROLES WHERE role_code  =  (SELECT role_code FROM users WHERE user_login  =  1 GROUP BY role_code ORDER BY count(*) DESC LIMIT 1)",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_1918",
+  "db_id": "protein_institute",
+  "question": "Show the institution type with the largest number of institutions.",
+  "gold_sql": "SELECT TYPE FROM institution GROUP BY TYPE ORDER BY count(*) DESC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_4086",
+  "db_id": "student_1",
+  "question": "Report the number of students in each classroom.",
+  "gold_sql": "SELECT classroom ,  count(*) FROM list GROUP BY classroom",
+  "hardness": "medium"
  },
  {
   "id": "train_3545",
@@ -84,17 +154,241 @@
   "hardness": "easy"
  },
  {
-  "id": "train_3581",
-  "db_id": "music_1",
-  "question": "What are the ids of songs that are available in either mp4 format or have resolution above 720?",
-  "gold_sql": "SELECT f_id FROM files WHERE formats  =  \"mp4\" UNION SELECT f_id FROM song WHERE resolution  >  720",
+  "id": "train_6238",
+  "db_id": "ship_1",
+  "question": "Find the captain rank that has some captains in both Cutter and Armed schooner classes.",
+  "gold_sql": "SELECT rank FROM captain WHERE CLASS  =  'Cutter' INTERSECT SELECT rank FROM captain WHERE CLASS  =  'Armed schooner'",
   "hardness": "hard"
  },
  {
-  "id": "train_3120",
+  "id": "train_5483",
+  "db_id": "voter_2",
+  "question": "What are the first and last names of all the female students who have president votes?",
+  "gold_sql": "SELECT DISTINCT T1.Fname ,  T1.LName FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.President_VOTE WHERE T1.sex  =  \"F\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5476",
+  "db_id": "voter_2",
+  "question": "Find the distinct ages of students who have secretary votes in the fall election cycle.",
+  "gold_sql": "SELECT DISTINCT T1.Age FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.Secretary_Vote WHERE T2.Election_Cycle  =  \"Fall\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5355",
+  "db_id": "tracking_software_problems",
+  "question": "Find the oldest log id and its corresponding problem id.",
+  "gold_sql": "SELECT problem_log_id ,  problem_id FROM problem_log ORDER BY log_entry_date LIMIT 1",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_6241",
+  "db_id": "ship_1",
+  "question": "What are the ranks of captains that have no captain that are in the Third-rate ship of the line class?",
+  "gold_sql": "SELECT rank FROM captain EXCEPT SELECT rank FROM captain WHERE CLASS  =  'Third-rate ship of the line'",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_0284",
+  "db_id": "twitter_1",
+  "question": "Find the name and email of the users who have more than 1000 followers.",
+  "gold_sql": "SELECT name ,  email FROM user_profiles WHERE followers  >  1000",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_3101",
   "db_id": "behavior_monitoring",
-  "question": "What are the line 1 and average monthly rentals of all student addresses?",
-  "gold_sql": "SELECT T1.line_1 ,  avg(T2.monthly_rental) FROM Addresses AS T1 JOIN Student_Addresses AS T2 ON T1.address_id  =  T2.address_id GROUP BY T2.address_id",
+  "question": "List all cities of addresses in alphabetical order.",
+  "gold_sql": "SELECT city FROM Addresses ORDER BY city",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_3605",
+  "db_id": "music_1",
+  "question": "Find the names and number of works of all artists who have at least one English songs.",
+  "gold_sql": "SELECT T1.artist_name ,  count(*) FROM artist AS T1 JOIN song AS T2 ON T1.artist_name  =  T2.artist_name WHERE T2.languages  =  \"english\" GROUP BY T2.artist_name HAVING count(*)  >=  1",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_6229",
+  "db_id": "ship_1",
+  "question": "What are the names, classes, and ranks of all captains?",
+  "gold_sql": "SELECT name ,  CLASS ,  rank FROM captain",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_5472",
+  "db_id": "voter_2",
+  "question": "Find the distinct last names of the students who have class president votes.",
+  "gold_sql": "SELECT DISTINCT T1.LName FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.CLASS_President_VOTE",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_4902",
+  "db_id": "store_product",
+  "question": "Find the list of page size which have more than 3 product listed",
+  "gold_sql": "SELECT max_page_size FROM product GROUP BY max_page_size HAVING count(*)  >  3",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_2354",
+  "db_id": "csu_1",
+  "question": "What is the average fee on a CSU campus in 2005?",
+  "gold_sql": "SELECT avg(campusfee) FROM csu_fees WHERE YEAR  =  2005",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_2372",
+  "db_id": "csu_1",
+  "question": "How many faculty is there in total in the year of 2002?",
+  "gold_sql": "SELECT sum(faculty) FROM faculty WHERE YEAR  =  2002",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_4922",
+  "db_id": "store_product",
+  "question": "Find the number of stores in each city.",
+  "gold_sql": "SELECT t3.headquartered_city ,  count(*) FROM store AS t1 JOIN store_district AS t2 ON t1.store_id  =  t2.store_id JOIN district AS t3 ON t2.district_id  =  t3.district_id GROUP BY t3.headquartered_city",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_1910",
+  "db_id": "protein_institute",
+  "question": "How many buildings are there?",
+  "gold_sql": "SELECT count(*) FROM building",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_5683",
+  "db_id": "dorm_1",
+  "question": "What is the total student capacity of all dorms?",
+  "gold_sql": "SELECT sum(student_capacity) FROM dorm",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_4082",
+  "db_id": "student_1",
+  "question": "For each classroom, report the classroom number and the number of grades using it.",
+  "gold_sql": "SELECT classroom ,  count(DISTINCT grade) FROM list GROUP BY classroom",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_3856",
+  "db_id": "insurance_policies",
+  "question": "Among all the claims, what is the settlement amount of the claim with the largest claim amount? List both the settlement amount and claim amount.",
+  "gold_sql": "SELECT Amount_Settled ,  Amount_Claimed FROM Claims ORDER BY Amount_Claimed DESC LIMIT 1",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5387",
+  "db_id": "tracking_software_problems",
+  "question": "For which product was there a problem reported by Christop Berge, with closure authorised by Ashley Medhurst? Return the product ids.",
+  "gold_sql": "SELECT product_id FROM problems AS T1 JOIN staff AS T2 ON T1.reported_by_staff_id = T2.staff_id WHERE T2.staff_first_name = \"Christop\" AND T2.staff_last_name = \"Berge\" INTERSECT SELECT product_id FROM problems AS T1 JOIN staff AS T2 ON T1.closure_authorised_by_staff_id = T2.staff_id WHERE T2.staff_first_name = \"Ashley\" AND T2.staff_last_name = \"Medhurst\"",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_3536",
+  "db_id": "music_1",
+  "question": "What are the id of all the files in mp3 format?",
+  "gold_sql": "SELECT f_id FROM files WHERE formats  =  \"mp3\"",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_6228",
+  "db_id": "ship_1",
+  "question": "Find the name, class and rank of all captains.",
+  "gold_sql": "SELECT name ,  CLASS ,  rank FROM captain",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_3122",
+  "db_id": "behavior_monitoring",
+  "question": "What are the email addresses of teachers whose address has zip code \"918\"?",
+  "gold_sql": "SELECT T2.email_address FROM Addresses AS T1 JOIN Teachers AS T2 ON T1.address_id  =  T2.address_id WHERE T1.zip_postcode  =  \"918\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_6232",
+  "db_id": "ship_1",
+  "question": "Which classes have more than two captains?",
+  "gold_sql": "SELECT CLASS FROM captain GROUP BY CLASS HAVING count(*)  >  2",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_6252",
+  "db_id": "ship_1",
+  "question": "List all ship names in the order of built year and class.",
+  "gold_sql": "SELECT name FROM ship ORDER BY built_year ,  CLASS",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_4523",
+  "db_id": "document_management",
+  "question": "Find the average access counts of documents with functional area \"Acknowledgement\".",
+  "gold_sql": "SELECT avg(t1.access_count) FROM documents AS t1 JOIN document_functional_areas AS t2 ON t1.document_code  =  t2.document_code JOIN functional_areas AS t3 ON t2.functional_area_code  =  t3.functional_area_code WHERE t3.functional_area_description  =  \"Acknowledgement\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_3872",
+  "db_id": "insurance_policies",
+  "question": "What is the total amount of settlement made for all the settlements?",
+  "gold_sql": "SELECT sum(Amount_Settled) FROM Settlements",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_4068",
+  "db_id": "student_1",
+  "question": "How many students does KAWA GORDON teaches?",
+  "gold_sql": "SELECT count(*) FROM list AS T1 JOIN teachers AS T2 ON T1.classroom  =  T2.classroom WHERE T2.firstname  =  \"KAWA\" AND T2.lastname  =  \"GORDON\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_4083",
+  "db_id": "student_1",
+  "question": "For each classroom, show the classroom number and count the number of distinct grades that use the room.",
+  "gold_sql": "SELECT classroom ,  count(DISTINCT grade) FROM list GROUP BY classroom",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5491",
+  "db_id": "voter_2",
+  "question": "What is the average age of students who have city code \"NYC\" and have secretary votes for the spring election cycle?",
+  "gold_sql": "SELECT avg(T1.Age) FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  SECRETARY_Vote WHERE T1.city_code  =  \"NYC\" AND T2.Election_Cycle  =  \"Spring\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5398",
+  "db_id": "tracking_software_problems",
+  "question": "Find the products which have problems reported by both Lacey Bosco and Kenton Champlin?",
+  "gold_sql": "SELECT T2.product_name FROM problems AS T1 JOIN product AS T2 JOIN staff AS T3 ON T1.product_id = T2.product_id AND T1.reported_by_staff_id = T3.staff_id WHERE T3.staff_first_name = \"Lacey\" AND T3.staff_last_name = \"Bosco\" INTERSECT SELECT T2.product_name FROM problems AS T1 JOIN product AS T2 JOIN staff AS T3 ON T1.product_id = T2.product_id AND T1.reported_by_staff_id = T3.staff_id WHERE T3.staff_first_name = \"Kenton\" AND T3.staff_last_name = \"Champlin\"",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_3565",
+  "db_id": "music_1",
+  "question": "Return the gender and name of artist who produced the song with the lowest resolution.",
+  "gold_sql": "SELECT T1.gender ,  T1.artist_name FROM artist AS T1 JOIN song AS T2 ON T1.artist_name  =  T2.artist_name ORDER BY T2.resolution LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_3094",
+  "db_id": "behavior_monitoring",
+  "question": "What is the email of the student with first name \"Emma\" and last name \"Rohan\"?",
+  "gold_sql": "SELECT email_address FROM Students WHERE first_name  =  \"Emma\" AND last_name  =  \"Rohan\"",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_5703",
+  "db_id": "dorm_1",
+  "question": "What is the name of the dorm with both a TV Lounge and Study Room listed as amenities?",
+  "gold_sql": "SELECT T1.dorm_name FROM dorm AS T1 JOIN has_amenity AS T2 ON T1.dormid  =  T2.dormid JOIN dorm_amenity AS T3 ON T2.amenid  =  T3.amenid WHERE T3.amenity_name  =  'TV Lounge' INTERSECT SELECT T1.dorm_name FROM dorm AS T1 JOIN has_amenity AS T2 ON T1.dormid  =  T2.dormid JOIN dorm_amenity AS T3 ON T2.amenid  =  T3.amenid WHERE T3.amenity_name  =  'Study Room'",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_3541",
+  "db_id": "music_1",
+  "question": "What is the name of the artist who produced the shortest song?",
+  "gold_sql": "SELECT T1.artist_name FROM song AS T1 JOIN files AS T2 ON T1.f_id  =  T2.f_id ORDER BY T2.duration LIMIT 1",
   "hardness": "hard"
  },
  {
@@ -105,18 +399,214 @@
   "hardness": "medium"
  },
  {
-  "id": "train_0286",
-  "db_id": "twitter_1",
-  "question": "Find the name and email for the users who have more than one follower.",
-  "gold_sql": "SELECT T1.name ,  T1.email FROM user_profiles AS T1 JOIN follows AS T2 ON T1.uid  =  T2.f1 GROUP BY T2.f1 HAVING count(*)  >  1",
+  "id": "train_5478",
+  "db_id": "voter_2",
+  "question": "Find the distinct Advisor of students who have treasurer votes in the spring election cycle.",
+  "gold_sql": "SELECT DISTINCT T1.Advisor FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.Treasurer_Vote WHERE T2.Election_Cycle  =  \"Spring\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5452",
+  "db_id": "voter_2",
+  "question": "Find the last names of students with major 50.",
+  "gold_sql": "SELECT LName FROM STUDENT WHERE Major  =  50",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_6265",
+  "db_id": "ship_1",
+  "question": "What are the names and flags of ships that do not have a captain with the rank of Midshipman?",
+  "gold_sql": "SELECT name ,  flag FROM ship WHERE ship_id NOT IN (SELECT ship_id FROM captain WHERE rank  =  'Midshipman')",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_3606",
+  "db_id": "music_1",
+  "question": "What are the names and number of works for all artists who have sung at least one song in English?",
+  "gold_sql": "SELECT T1.artist_name ,  count(*) FROM artist AS T1 JOIN song AS T2 ON T1.artist_name  =  T2.artist_name WHERE T2.languages  =  \"english\" GROUP BY T2.artist_name HAVING count(*)  >=  1",
   "hardness": "extra"
  },
  {
-  "id": "train_5476",
-  "db_id": "voter_2",
-  "question": "Find the distinct ages of students who have secretary votes in the fall election cycle.",
-  "gold_sql": "SELECT DISTINCT T1.Age FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.Secretary_Vote WHERE T2.Election_Cycle  =  \"Fall\"",
+  "id": "train_4928",
+  "db_id": "store_product",
+  "question": "What products are available at store named \"Miramichi\"?",
+  "gold_sql": "SELECT t1.product FROM product AS t1 JOIN store_product AS t2 ON t1.product_id  =  t2.product_id JOIN store AS t3 ON t2.store_id  =  t3.store_id WHERE t3.store_name  =  \"Miramichi\"",
   "hardness": "medium"
+ },
+ {
+  "id": "train_5376",
+  "db_id": "tracking_software_problems",
+  "question": "For each product which has problems, what are the number of problems and the product id?",
+  "gold_sql": "SELECT count(*) ,  T2.product_id FROM problems AS T1 JOIN product AS T2 ON T1.product_id = T2.product_id GROUP BY T2.product_id",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_4084",
+  "db_id": "student_1",
+  "question": "Which classroom has the most students?",
+  "gold_sql": "SELECT classroom FROM list GROUP BY classroom ORDER BY count(*) DESC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_5689",
+  "db_id": "dorm_1",
+  "question": "What is the average and total capacity for all dorms who are of gender X?",
+  "gold_sql": "SELECT avg(student_capacity) ,  sum(student_capacity) FROM dorm WHERE gender  =  'X'",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_3625",
+  "db_id": "music_1",
+  "question": "Find the names of the artists who have produced English songs but have never received rating higher than 8.",
+  "gold_sql": "SELECT DISTINCT artist_name FROM song WHERE languages  =  \"english\" EXCEPT SELECT DISTINCT artist_name FROM song WHERE rating  >  8",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_5354",
+  "db_id": "tracking_software_problems",
+  "question": "What is the oldest log id and its corresponding problem id?",
+  "gold_sql": "SELECT problem_log_id ,  problem_id FROM problem_log ORDER BY log_entry_date LIMIT 1",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5713",
+  "db_id": "dorm_1",
+  "question": "What is the code of the city with the most students?",
+  "gold_sql": "SELECT city_code FROM student GROUP BY city_code ORDER BY count(*) DESC LIMIT 1",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_3853",
+  "db_id": "insurance_policies",
+  "question": "Give me the the customer details and id for the customers who had two or more policies but did not file any claims.",
+  "gold_sql": "SELECT T1.customer_details ,  T1.customer_id FROM Customers AS T1 JOIN Customer_Policies AS T2 ON T1.Customer_id  =  T2.customer_id GROUP BY T1.customer_id HAVING count(*)  >=  2 EXCEPT SELECT T1.customer_details ,  T1.customer_id FROM Customers AS T1 JOIN Customer_Policies AS T2 ON T1.Customer_id  =  T2.customer_id JOIN Claims AS T3 ON T2.policy_id  =  T3.policy_id",
+  "hardness": "extra"
+ },
+ {
+  "id": "train_2361",
+  "db_id": "csu_1",
+  "question": "What are the names of the campus that have more faculties in 2002 than the maximum number in Orange county?",
+  "gold_sql": "SELECT T1.campus FROM campuses AS T1 JOIN faculty AS T2 ON T1.id  =  T2.campus WHERE T2.year  =  2002 AND faculty  >  (SELECT max(faculty) FROM campuses AS T1 JOIN faculty AS T2 ON T1.id  =  T2.campus WHERE T2.year  =  2002 AND T1.county  =  \"Orange\")",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_5357",
+  "db_id": "tracking_software_problems",
+  "question": "For the problem with id 10, return the ids and dates of its problem logs.",
+  "gold_sql": "SELECT problem_log_id ,  log_entry_date FROM problem_log WHERE problem_id = 10",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_4935",
+  "db_id": "store_product",
+  "question": "What are all of the products whose name includes the substring \"Scanner\"?",
+  "gold_sql": "SELECT product FROM product WHERE product LIKE \"%Scanner%\"",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_3553",
+  "db_id": "music_1",
+  "question": "Find the names of the artists who are from UK and have produced English songs.",
+  "gold_sql": "SELECT artist_name FROM artist WHERE country  =  \"UK\" INTERSECT SELECT artist_name FROM song WHERE languages  =  \"english\"",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_3581",
+  "db_id": "music_1",
+  "question": "What are the ids of songs that are available in either mp4 format or have resolution above 720?",
+  "gold_sql": "SELECT f_id FROM files WHERE formats  =  \"mp4\" UNION SELECT f_id FROM song WHERE resolution  >  720",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_3531",
+  "db_id": "music_1",
+  "question": "What is the id of the longest song?",
+  "gold_sql": "SELECT f_id FROM files ORDER BY duration DESC LIMIT 1",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_4911",
+  "db_id": "store_product",
+  "question": "What is the name of the district with the smallest area?",
+  "gold_sql": "SELECT district_name FROM district ORDER BY city_area ASC LIMIT 1",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_3118",
+  "db_id": "behavior_monitoring",
+  "question": "What are the monthly rentals of student addresses in Texas state?",
+  "gold_sql": "SELECT T2.monthly_rental FROM Addresses AS T1 JOIN Student_Addresses AS T2 ON T1.address_id  =  T2.address_id WHERE T1.state_province_county  =  \"Texas\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_3554",
+  "db_id": "music_1",
+  "question": "What are the names of the artists that are from the UK and sang songs in English?",
+  "gold_sql": "SELECT artist_name FROM artist WHERE country  =  \"UK\" INTERSECT SELECT artist_name FROM song WHERE languages  =  \"english\"",
+  "hardness": "hard"
+ },
+ {
+  "id": "train_5696",
+  "db_id": "dorm_1",
+  "question": "Find the capacity and gender type of the dorm whose name has substring ‘Donor’.",
+  "gold_sql": "SELECT student_capacity ,  gender FROM dorm WHERE dorm_name LIKE '%Donor%'",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_5501",
+  "db_id": "voter_2",
+  "question": "How many students does each advisor have?",
+  "gold_sql": "SELECT Advisor ,  count(*) FROM STUDENT GROUP BY Advisor",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5677",
+  "db_id": "dorm_1",
+  "question": "What is the first name of the students who are in age 20 to 25 and living in PHL city?",
+  "gold_sql": "SELECT fname FROM student WHERE city_code  =  'PHL' AND age BETWEEN 20 AND 25",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_0982",
+  "db_id": "university_basketball",
+  "question": "Return the founded year for the school with the largest enrollment.",
+  "gold_sql": "SELECT founded FROM university ORDER BY enrollment DESC LIMIT 1",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_5473",
+  "db_id": "voter_2",
+  "question": "What are the distinct last names of the students who have class president votes?",
+  "gold_sql": "SELECT DISTINCT T1.LName FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.CLASS_President_VOTE",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_2345",
+  "db_id": "csu_1",
+  "question": "What campuses are located in Los Angeles county and opened after 1950?",
+  "gold_sql": "SELECT campus FROM campuses WHERE county  =  \"Los Angeles\" AND YEAR  >  1950",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_4066",
+  "db_id": "student_1",
+  "question": "How many students does LORIA ONDERSMA teaches?",
+  "gold_sql": "SELECT count(*) FROM list AS T1 JOIN teachers AS T2 ON T1.classroom  =  T2.classroom WHERE T2.firstname  =  \"LORIA\" AND T2.lastname  =  \"ONDERSMA\"",
+  "hardness": "medium"
+ },
+ {
+  "id": "train_4530",
+  "db_id": "document_management",
+  "question": "What are the names of documents that contain the substring \"CV\"?",
+  "gold_sql": "SELECT document_name FROM documents WHERE document_name LIKE \"%CV%\"",
+  "hardness": "easy"
+ },
+ {
+  "id": "train_3116",
+  "db_id": "behavior_monitoring",
+  "question": "What are the id and zip code of the address with the highest monthly rental?",
+  "gold_sql": "SELECT T2.address_id ,  T1.zip_postcode FROM Addresses AS T1 JOIN Student_Addresses AS T2 ON T1.address_id  =  T2.address_id ORDER BY monthly_rental DESC LIMIT 1",
+  "hardness": "hard"
  },
  {
   "id": "train_2348",
@@ -133,234 +623,10 @@
   "hardness": "easy"
  },
  {
-  "id": "train_3856",
-  "db_id": "insurance_policies",
-  "question": "Among all the claims, what is the settlement amount of the claim with the largest claim amount? List both the settlement amount and claim amount.",
-  "gold_sql": "SELECT Amount_Settled ,  Amount_Claimed FROM Claims ORDER BY Amount_Claimed DESC LIMIT 1",
-  "hardness": "medium"
- },
- {
-  "id": "train_5478",
-  "db_id": "voter_2",
-  "question": "Find the distinct Advisor of students who have treasurer votes in the spring election cycle.",
-  "gold_sql": "SELECT DISTINCT T1.Advisor FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.Treasurer_Vote WHERE T2.Election_Cycle  =  \"Spring\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_3877",
-  "db_id": "insurance_policies",
-  "question": "Tell me the the claim date and settlement date for each settlement case.",
-  "gold_sql": "SELECT Date_Claim_Made ,  Date_Claim_Settled FROM Settlements",
-  "hardness": "easy"
- },
- {
-  "id": "train_4526",
-  "db_id": "document_management",
-  "question": "What are the names of documents that do not have any images?",
-  "gold_sql": "SELECT document_name FROM documents EXCEPT SELECT t1.document_name FROM documents AS t1 JOIN document_sections AS t2 ON t1.document_code  =  t2.document_code JOIN document_sections_images AS t3 ON t2.section_id  =  t3.section_id",
-  "hardness": "extra"
- },
- {
-  "id": "train_5491",
-  "db_id": "voter_2",
-  "question": "What is the average age of students who have city code \"NYC\" and have secretary votes for the spring election cycle?",
-  "gold_sql": "SELECT avg(T1.Age) FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  SECRETARY_Vote WHERE T1.city_code  =  \"NYC\" AND T2.Election_Cycle  =  \"Spring\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_5376",
-  "db_id": "tracking_software_problems",
-  "question": "For each product which has problems, what are the number of problems and the product id?",
-  "gold_sql": "SELECT count(*) ,  T2.product_id FROM problems AS T1 JOIN product AS T2 ON T1.product_id = T2.product_id GROUP BY T2.product_id",
-  "hardness": "hard"
- },
- {
-  "id": "train_5721",
-  "db_id": "dorm_1",
-  "question": "How many dorms are there and what is the total capacity for each gender?",
-  "gold_sql": "SELECT count(*) ,  sum(student_capacity) ,  gender FROM dorm GROUP BY gender",
-  "hardness": "medium"
- },
- {
-  "id": "train_4540",
-  "db_id": "document_management",
-  "question": "What are the different role codes for users, and how many users have each?",
-  "gold_sql": "SELECT count(*) ,  role_code FROM users GROUP BY role_code",
-  "hardness": "medium"
- },
- {
-  "id": "train_3853",
-  "db_id": "insurance_policies",
-  "question": "Give me the the customer details and id for the customers who had two or more policies but did not file any claims.",
-  "gold_sql": "SELECT T1.customer_details ,  T1.customer_id FROM Customers AS T1 JOIN Customer_Policies AS T2 ON T1.Customer_id  =  T2.customer_id GROUP BY T1.customer_id HAVING count(*)  >=  2 EXCEPT SELECT T1.customer_details ,  T1.customer_id FROM Customers AS T1 JOIN Customer_Policies AS T2 ON T1.Customer_id  =  T2.customer_id JOIN Claims AS T3 ON T2.policy_id  =  T3.policy_id",
-  "hardness": "extra"
- },
- {
-  "id": "train_5502",
-  "db_id": "voter_2",
-  "question": "Report all advisors that advise more than 2 students.",
-  "gold_sql": "SELECT Advisor FROM STUDENT GROUP BY Advisor HAVING COUNT(*)  >  2",
-  "hardness": "hard"
- },
- {
-  "id": "train_4084",
-  "db_id": "student_1",
-  "question": "Which classroom has the most students?",
-  "gold_sql": "SELECT classroom FROM list GROUP BY classroom ORDER BY count(*) DESC LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "train_3620",
-  "db_id": "music_1",
-  "question": "What are the top 3 artists with the largest number of songs in the language Bangla?",
-  "gold_sql": "SELECT T1.artist_name FROM artist AS T1 JOIN song AS T2 ON T1.artist_name  =  T2.artist_name WHERE T2.languages  =  \"bangla\" GROUP BY T2.artist_name ORDER BY count(*) DESC LIMIT 3",
-  "hardness": "extra"
- },
- {
-  "id": "train_1918",
-  "db_id": "protein_institute",
-  "question": "Show the institution type with the largest number of institutions.",
-  "gold_sql": "SELECT TYPE FROM institution GROUP BY TYPE ORDER BY count(*) DESC LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "train_4935",
-  "db_id": "store_product",
-  "question": "What are all of the products whose name includes the substring \"Scanner\"?",
-  "gold_sql": "SELECT product FROM product WHERE product LIKE \"%Scanner%\"",
-  "hardness": "easy"
- },
- {
-  "id": "train_3881",
-  "db_id": "insurance_policies",
-  "question": "What is the payment method that were used the least often?",
-  "gold_sql": "SELECT Payment_Method_Code FROM Payments GROUP BY Payment_Method_Code ORDER BY count(*) ASC LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "train_4928",
-  "db_id": "store_product",
-  "question": "What products are available at store named \"Miramichi\"?",
-  "gold_sql": "SELECT t1.product FROM product AS t1 JOIN store_product AS t2 ON t1.product_id  =  t2.product_id JOIN store AS t3 ON t2.store_id  =  t3.store_id WHERE t3.store_name  =  \"Miramichi\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_1910",
-  "db_id": "protein_institute",
-  "question": "How many buildings are there?",
-  "gold_sql": "SELECT count(*) FROM building",
-  "hardness": "easy"
- },
- {
-  "id": "train_0281",
-  "db_id": "twitter_1",
-  "question": "Find the name and email of the user whose name contains the word ‘Swift’.",
-  "gold_sql": "SELECT name ,  email FROM user_profiles WHERE name LIKE '%Swift%'",
-  "hardness": "easy"
- },
- {
-  "id": "train_5452",
-  "db_id": "voter_2",
-  "question": "Find the last names of students with major 50.",
-  "gold_sql": "SELECT LName FROM STUDENT WHERE Major  =  50",
-  "hardness": "easy"
- },
- {
-  "id": "train_2372",
-  "db_id": "csu_1",
-  "question": "How many faculty is there in total in the year of 2002?",
-  "gold_sql": "SELECT sum(faculty) FROM faculty WHERE YEAR  =  2002",
-  "hardness": "easy"
- },
- {
-  "id": "train_3872",
-  "db_id": "insurance_policies",
-  "question": "What is the total amount of settlement made for all the settlements?",
-  "gold_sql": "SELECT sum(Amount_Settled) FROM Settlements",
-  "hardness": "easy"
- },
- {
-  "id": "train_6229",
-  "db_id": "ship_1",
-  "question": "What are the names, classes, and ranks of all captains?",
-  "gold_sql": "SELECT name ,  CLASS ,  rank FROM captain",
-  "hardness": "easy"
- },
- {
-  "id": "train_5689",
-  "db_id": "dorm_1",
-  "question": "What is the average and total capacity for all dorms who are of gender X?",
-  "gold_sql": "SELECT avg(student_capacity) ,  sum(student_capacity) FROM dorm WHERE gender  =  'X'",
-  "hardness": "easy"
- },
- {
-  "id": "train_6228",
-  "db_id": "ship_1",
-  "question": "Find the name, class and rank of all captains.",
-  "gold_sql": "SELECT name ,  CLASS ,  rank FROM captain",
-  "hardness": "easy"
- },
- {
-  "id": "train_4530",
-  "db_id": "document_management",
-  "question": "What are the names of documents that contain the substring \"CV\"?",
-  "gold_sql": "SELECT document_name FROM documents WHERE document_name LIKE \"%CV%\"",
-  "hardness": "easy"
- },
- {
-  "id": "train_3536",
-  "db_id": "music_1",
-  "question": "What are the id of all the files in mp3 format?",
-  "gold_sql": "SELECT f_id FROM files WHERE formats  =  \"mp3\"",
-  "hardness": "easy"
- },
- {
-  "id": "train_5677",
-  "db_id": "dorm_1",
-  "question": "What is the first name of the students who are in age 20 to 25 and living in PHL city?",
-  "gold_sql": "SELECT fname FROM student WHERE city_code  =  'PHL' AND age BETWEEN 20 AND 25",
-  "hardness": "easy"
- },
- {
   "id": "train_5448",
   "db_id": "voter_2",
   "question": "Find the distinct number of president votes.",
   "gold_sql": "SELECT count(DISTINCT President_Vote) FROM VOTING_RECORD",
-  "hardness": "easy"
- },
- {
-  "id": "train_0284",
-  "db_id": "twitter_1",
-  "question": "Find the name and email of the users who have more than 1000 followers.",
-  "gold_sql": "SELECT name ,  email FROM user_profiles WHERE followers  >  1000",
-  "hardness": "easy"
- },
- {
-  "id": "train_2329",
-  "db_id": "csu_1",
-  "question": "What are the campuses that opened in 1958?",
-  "gold_sql": "SELECT campus FROM campuses WHERE YEAR  =  1958",
-  "hardness": "easy"
- },
- {
-  "id": "train_2345",
-  "db_id": "csu_1",
-  "question": "What campuses are located in Los Angeles county and opened after 1950?",
-  "gold_sql": "SELECT campus FROM campuses WHERE county  =  \"Los Angeles\" AND YEAR  >  1950",
-  "hardness": "easy"
- },
- {
-  "id": "train_5683",
-  "db_id": "dorm_1",
-  "question": "What is the total student capacity of all dorms?",
-  "gold_sql": "SELECT sum(student_capacity) FROM dorm",
-  "hardness": "easy"
- },
- {
-  "id": "train_2354",
-  "db_id": "csu_1",
-  "question": "What is the average fee on a CSU campus in 2005?",
-  "gold_sql": "SELECT avg(campusfee) FROM csu_fees WHERE YEAR  =  2005",
   "hardness": "easy"
  },
  {
@@ -371,25 +637,11 @@
   "hardness": "easy"
  },
  {
-  "id": "train_5357",
-  "db_id": "tracking_software_problems",
-  "question": "For the problem with id 10, return the ids and dates of its problem logs.",
-  "gold_sql": "SELECT problem_log_id ,  log_entry_date FROM problem_log WHERE problem_id = 10",
-  "hardness": "easy"
- },
- {
-  "id": "train_3873",
-  "db_id": "insurance_policies",
-  "question": "Compute the total amount of settlement across all the settlements.",
-  "gold_sql": "SELECT sum(Amount_Settled) FROM Settlements",
-  "hardness": "easy"
- },
- {
-  "id": "train_0992",
-  "db_id": "university_basketball",
-  "question": "Return the name of the team and the acc during the regular season for the school that was founded the earliest.",
-  "gold_sql": "SELECT t2.team_name ,  t2.ACC_Regular_Season FROM university AS t1 JOIN basketball_match AS t2 ON t1.school_id  =  t2.school_id ORDER BY t1.founded LIMIT 1",
-  "hardness": "hard"
+  "id": "train_3600",
+  "db_id": "music_1",
+  "question": "What is the maximum and minimum resolution of all songs that are approximately 3 minutes long?",
+  "gold_sql": "SELECT max(T2.resolution) ,  min(T2.resolution) FROM files AS T1 JOIN song AS T2 ON T1.f_id  =  T2.f_id WHERE T1.duration LIKE \"3:%\"",
+  "hardness": "medium"
  },
  {
   "id": "train_5718",
@@ -399,118 +651,6 @@
   "hardness": "hard"
  },
  {
-  "id": "train_6232",
-  "db_id": "ship_1",
-  "question": "Which classes have more than two captains?",
-  "gold_sql": "SELECT CLASS FROM captain GROUP BY CLASS HAVING count(*)  >  2",
-  "hardness": "hard"
- },
- {
-  "id": "train_3556",
-  "db_id": "music_1",
-  "question": "What is the id of the files that are available in the format of mp4 and a resolution smaller than 1000?",
-  "gold_sql": "SELECT f_id FROM files WHERE formats  =  \"mp4\" INTERSECT SELECT f_id FROM song WHERE resolution  <  1000",
-  "hardness": "hard"
- },
- {
-  "id": "train_4922",
-  "db_id": "store_product",
-  "question": "Find the number of stores in each city.",
-  "gold_sql": "SELECT t3.headquartered_city ,  count(*) FROM store AS t1 JOIN store_district AS t2 ON t1.store_id  =  t2.store_id JOIN district AS t3 ON t2.district_id  =  t3.district_id GROUP BY t3.headquartered_city",
-  "hardness": "hard"
- },
- {
-  "id": "train_2361",
-  "db_id": "csu_1",
-  "question": "What are the names of the campus that have more faculties in 2002 than the maximum number in Orange county?",
-  "gold_sql": "SELECT T1.campus FROM campuses AS T1 JOIN faculty AS T2 ON T1.id  =  T2.campus WHERE T2.year  =  2002 AND faculty  >  (SELECT max(faculty) FROM campuses AS T1 JOIN faculty AS T2 ON T1.id  =  T2.campus WHERE T2.year  =  2002 AND T1.county  =  \"Orange\")",
-  "hardness": "hard"
- },
- {
-  "id": "train_3554",
-  "db_id": "music_1",
-  "question": "What are the names of the artists that are from the UK and sang songs in English?",
-  "gold_sql": "SELECT artist_name FROM artist WHERE country  =  \"UK\" INTERSECT SELECT artist_name FROM song WHERE languages  =  \"english\"",
-  "hardness": "hard"
- },
- {
-  "id": "train_6238",
-  "db_id": "ship_1",
-  "question": "Find the captain rank that has some captains in both Cutter and Armed schooner classes.",
-  "gold_sql": "SELECT rank FROM captain WHERE CLASS  =  'Cutter' INTERSECT SELECT rank FROM captain WHERE CLASS  =  'Armed schooner'",
-  "hardness": "hard"
- },
- {
-  "id": "train_5713",
-  "db_id": "dorm_1",
-  "question": "What is the code of the city with the most students?",
-  "gold_sql": "SELECT city_code FROM student GROUP BY city_code ORDER BY count(*) DESC LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "train_3565",
-  "db_id": "music_1",
-  "question": "Return the gender and name of artist who produced the song with the lowest resolution.",
-  "gold_sql": "SELECT T1.gender ,  T1.artist_name FROM artist AS T1 JOIN song AS T2 ON T1.artist_name  =  T2.artist_name ORDER BY T2.resolution LIMIT 1",
-  "hardness": "hard"
- },
- {
-  "id": "train_4902",
-  "db_id": "store_product",
-  "question": "Find the list of page size which have more than 3 product listed",
-  "gold_sql": "SELECT max_page_size FROM product GROUP BY max_page_size HAVING count(*)  >  3",
-  "hardness": "hard"
- },
- {
-  "id": "train_4534",
-  "db_id": "document_management",
-  "question": "What is the description of the most popular role among users that have logged in?",
-  "gold_sql": "SELECT role_description FROM ROLES WHERE role_code  =  (SELECT role_code FROM users WHERE user_login  =  1 GROUP BY role_code ORDER BY count(*) DESC LIMIT 1)",
-  "hardness": "extra"
- },
- {
-  "id": "train_3606",
-  "db_id": "music_1",
-  "question": "What are the names and number of works for all artists who have sung at least one song in English?",
-  "gold_sql": "SELECT T1.artist_name ,  count(*) FROM artist AS T1 JOIN song AS T2 ON T1.artist_name  =  T2.artist_name WHERE T2.languages  =  \"english\" GROUP BY T2.artist_name HAVING count(*)  >=  1",
-  "hardness": "extra"
- },
- {
-  "id": "train_6266",
-  "db_id": "ship_1",
-  "question": "Find the name of the ships that are steered by both a captain with Midshipman rank and a captain with Lieutenant rank.",
-  "gold_sql": "SELECT t1.name FROM ship AS t1 JOIN captain AS t2 ON t1.ship_id  =  t2.ship_id WHERE t2.rank  =  'Midshipman' INTERSECT SELECT t1.name FROM ship AS t1 JOIN captain AS t2 ON t1.ship_id  =  t2.ship_id WHERE t2.rank  =  'Lieutenant'",
-  "hardness": "extra"
- },
- {
-  "id": "train_5703",
-  "db_id": "dorm_1",
-  "question": "What is the name of the dorm with both a TV Lounge and Study Room listed as amenities?",
-  "gold_sql": "SELECT T1.dorm_name FROM dorm AS T1 JOIN has_amenity AS T2 ON T1.dormid  =  T2.dormid JOIN dorm_amenity AS T3 ON T2.amenid  =  T3.amenid WHERE T3.amenity_name  =  'TV Lounge' INTERSECT SELECT T1.dorm_name FROM dorm AS T1 JOIN has_amenity AS T2 ON T1.dormid  =  T2.dormid JOIN dorm_amenity AS T3 ON T2.amenid  =  T3.amenid WHERE T3.amenity_name  =  'Study Room'",
-  "hardness": "extra"
- },
- {
-  "id": "train_4510",
-  "db_id": "document_management",
-  "question": "Return the structure description of the document that has been accessed the fewest number of times.",
-  "gold_sql": "SELECT t2.document_structure_description FROM documents AS t1 JOIN document_structures AS t2 ON t1.document_structure_code  =  t2.document_structure_code GROUP BY t1.document_structure_code ORDER BY count(*) DESC LIMIT 1",
-  "hardness": "extra"
- },
- {
-  "id": "train_5387",
-  "db_id": "tracking_software_problems",
-  "question": "For which product was there a problem reported by Christop Berge, with closure authorised by Ashley Medhurst? Return the product ids.",
-  "gold_sql": "SELECT product_id FROM problems AS T1 JOIN staff AS T2 ON T1.reported_by_staff_id = T2.staff_id WHERE T2.staff_first_name = \"Christop\" AND T2.staff_last_name = \"Berge\" INTERSECT SELECT product_id FROM problems AS T1 JOIN staff AS T2 ON T1.closure_authorised_by_staff_id = T2.staff_id WHERE T2.staff_first_name = \"Ashley\" AND T2.staff_last_name = \"Medhurst\"",
-  "hardness": "extra"
- },
- {
-  "id": "train_3605",
-  "db_id": "music_1",
-  "question": "Find the names and number of works of all artists who have at least one English songs.",
-  "gold_sql": "SELECT T1.artist_name ,  count(*) FROM artist AS T1 JOIN song AS T2 ON T1.artist_name  =  T2.artist_name WHERE T2.languages  =  \"english\" GROUP BY T2.artist_name HAVING count(*)  >=  1",
-  "hardness": "extra"
- },
- {
   "id": "train_1923",
   "db_id": "protein_institute",
   "question": "Show the names and heights of buildings with at least two institutions founded after 1880.",
@@ -518,87 +658,10 @@
   "hardness": "extra"
  },
  {
-  "id": "train_5501",
-  "db_id": "voter_2",
-  "question": "How many students does each advisor have?",
-  "gold_sql": "SELECT Advisor ,  count(*) FROM STUDENT GROUP BY Advisor",
-  "hardness": "medium"
- },
- {
-  "id": "train_5354",
-  "db_id": "tracking_software_problems",
-  "question": "What is the oldest log id and its corresponding problem id?",
-  "gold_sql": "SELECT problem_log_id ,  problem_id FROM problem_log ORDER BY log_entry_date LIMIT 1",
-  "hardness": "medium"
- },
- {
-  "id": "train_6252",
-  "db_id": "ship_1",
-  "question": "List all ship names in the order of built year and class.",
-  "gold_sql": "SELECT name FROM ship ORDER BY built_year ,  CLASS",
-  "hardness": "medium"
- },
- {
-  "id": "train_5355",
-  "db_id": "tracking_software_problems",
-  "question": "Find the oldest log id and its corresponding problem id.",
-  "gold_sql": "SELECT problem_log_id ,  problem_id FROM problem_log ORDER BY log_entry_date LIMIT 1",
-  "hardness": "medium"
- },
- {
-  "id": "train_3122",
-  "db_id": "behavior_monitoring",
-  "question": "What are the email addresses of teachers whose address has zip code \"918\"?",
-  "gold_sql": "SELECT T2.email_address FROM Addresses AS T1 JOIN Teachers AS T2 ON T1.address_id  =  T2.address_id WHERE T1.zip_postcode  =  \"918\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_3118",
-  "db_id": "behavior_monitoring",
-  "question": "What are the monthly rentals of student addresses in Texas state?",
-  "gold_sql": "SELECT T2.monthly_rental FROM Addresses AS T1 JOIN Student_Addresses AS T2 ON T1.address_id  =  T2.address_id WHERE T1.state_province_county  =  \"Texas\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_5473",
-  "db_id": "voter_2",
-  "question": "What are the distinct last names of the students who have class president votes?",
-  "gold_sql": "SELECT DISTINCT T1.LName FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.CLASS_President_VOTE",
-  "hardness": "medium"
- },
- {
-  "id": "train_5483",
-  "db_id": "voter_2",
-  "question": "What are the first and last names of all the female students who have president votes?",
-  "gold_sql": "SELECT DISTINCT T1.Fname ,  T1.LName FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.President_VOTE WHERE T1.sex  =  \"F\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_5472",
-  "db_id": "voter_2",
-  "question": "Find the distinct last names of the students who have class president votes.",
-  "gold_sql": "SELECT DISTINCT T1.LName FROM STUDENT AS T1 JOIN VOTING_RECORD AS T2 ON T1.StuID  =  T2.CLASS_President_VOTE",
-  "hardness": "medium"
- },
- {
-  "id": "train_4518",
-  "db_id": "document_management",
-  "question": "Give the section titles of the document with the name \"David CV\".",
-  "gold_sql": "SELECT t2.section_title FROM documents AS t1 JOIN document_sections AS t2 ON t1.document_code  =  t2.document_code WHERE t1.document_name  =  \"David CV\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_4068",
-  "db_id": "student_1",
-  "question": "How many students does KAWA GORDON teaches?",
-  "gold_sql": "SELECT count(*) FROM list AS T1 JOIN teachers AS T2 ON T1.classroom  =  T2.classroom WHERE T2.firstname  =  \"KAWA\" AND T2.lastname  =  \"GORDON\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_4523",
-  "db_id": "document_management",
-  "question": "Find the average access counts of documents with functional area \"Acknowledgement\".",
-  "gold_sql": "SELECT avg(t1.access_count) FROM documents AS t1 JOIN document_functional_areas AS t2 ON t1.document_code  =  t2.document_code JOIN functional_areas AS t3 ON t2.functional_area_code  =  t3.functional_area_code WHERE t3.functional_area_description  =  \"Acknowledgement\"",
+  "id": "train_5742",
+  "db_id": "dorm_1",
+  "question": "Find the first name of students who are living in the Smith Hall.",
+  "gold_sql": "SELECT T1.fname FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.dorm_name  =  'Smith Hall'",
   "hardness": "medium"
  },
  {
@@ -609,94 +672,31 @@
   "hardness": "medium"
  },
  {
-  "id": "train_6265",
-  "db_id": "ship_1",
-  "question": "What are the names and flags of ships that do not have a captain with the rank of Midshipman?",
-  "gold_sql": "SELECT name ,  flag FROM ship WHERE ship_id NOT IN (SELECT ship_id FROM captain WHERE rank  =  'Midshipman')",
-  "hardness": "medium"
- },
- {
-  "id": "train_4083",
-  "db_id": "student_1",
-  "question": "For each classroom, show the classroom number and count the number of distinct grades that use the room.",
-  "gold_sql": "SELECT classroom ,  count(DISTINCT grade) FROM list GROUP BY classroom",
-  "hardness": "medium"
- },
- {
-  "id": "train_2137",
-  "db_id": "company_1",
-  "question": "list the first and last names, and the addresses of all employees in the ascending order of their birth date.",
-  "gold_sql": "SELECT fname ,  lname ,  address FROM employee ORDER BY Bdate",
-  "hardness": "medium"
- },
- {
-  "id": "train_5749",
+  "id": "train_5721",
   "db_id": "dorm_1",
-  "question": "How many female students live in Smith Hall?",
-  "gold_sql": "SELECT count(*) FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.dorm_name  =  'Smith Hall' AND T1.sex  =  'F'",
+  "question": "How many dorms are there and what is the total capacity for each gender?",
+  "gold_sql": "SELECT count(*) ,  sum(student_capacity) ,  gender FROM dorm GROUP BY gender",
   "hardness": "medium"
  },
  {
-  "id": "train_0982",
-  "db_id": "university_basketball",
-  "question": "Return the founded year for the school with the largest enrollment.",
-  "gold_sql": "SELECT founded FROM university ORDER BY enrollment DESC LIMIT 1",
-  "hardness": "medium"
+  "id": "train_5502",
+  "db_id": "voter_2",
+  "question": "Report all advisors that advise more than 2 students.",
+  "gold_sql": "SELECT Advisor FROM STUDENT GROUP BY Advisor HAVING COUNT(*)  >  2",
+  "hardness": "hard"
  },
  {
-  "id": "train_5742",
-  "db_id": "dorm_1",
-  "question": "Find the first name of students who are living in the Smith Hall.",
-  "gold_sql": "SELECT T1.fname FROM student AS T1 JOIN lives_in AS T2 ON T1.stuid  =  T2.stuid JOIN dorm AS T3 ON T3.dormid  =  T2.dormid WHERE T3.dorm_name  =  'Smith Hall'",
-  "hardness": "medium"
- },
- {
-  "id": "train_3101",
-  "db_id": "behavior_monitoring",
-  "question": "List all cities of addresses in alphabetical order.",
-  "gold_sql": "SELECT city FROM Addresses ORDER BY city",
-  "hardness": "medium"
- },
- {
-  "id": "train_4066",
-  "db_id": "student_1",
-  "question": "How many students does LORIA ONDERSMA teaches?",
-  "gold_sql": "SELECT count(*) FROM list AS T1 JOIN teachers AS T2 ON T1.classroom  =  T2.classroom WHERE T2.firstname  =  \"LORIA\" AND T2.lastname  =  \"ONDERSMA\"",
-  "hardness": "medium"
- },
- {
-  "id": "train_6261",
-  "db_id": "ship_1",
-  "question": "Return the names and classes of ships that do not have a captain?",
-  "gold_sql": "SELECT name ,  CLASS FROM ship WHERE ship_id NOT IN (SELECT ship_id FROM captain)",
-  "hardness": "medium"
- },
- {
-  "id": "train_4082",
-  "db_id": "student_1",
-  "question": "For each classroom, report the classroom number and the number of grades using it.",
-  "gold_sql": "SELECT classroom ,  count(DISTINCT grade) FROM list GROUP BY classroom",
-  "hardness": "medium"
- },
- {
-  "id": "train_4086",
-  "db_id": "student_1",
-  "question": "Report the number of students in each classroom.",
-  "gold_sql": "SELECT classroom ,  count(*) FROM list GROUP BY classroom",
-  "hardness": "medium"
- },
- {
-  "id": "train_4045",
-  "db_id": "student_1",
-  "question": "Show me the classrooms grade 5 is using.",
-  "gold_sql": "SELECT DISTINCT classroom FROM list WHERE grade  =  5",
+  "id": "train_2329",
+  "db_id": "csu_1",
+  "question": "What are the campuses that opened in 1958?",
+  "gold_sql": "SELECT campus FROM campuses WHERE YEAR  =  1958",
   "hardness": "easy"
  },
  {
-  "id": "train_3094",
-  "db_id": "behavior_monitoring",
-  "question": "What is the email of the student with first name \"Emma\" and last name \"Rohan\"?",
-  "gold_sql": "SELECT email_address FROM Students WHERE first_name  =  \"Emma\" AND last_name  =  \"Rohan\"",
+  "id": "train_3873",
+  "db_id": "insurance_policies",
+  "question": "Compute the total amount of settlement across all the settlements.",
+  "gold_sql": "SELECT sum(Amount_Settled) FROM Settlements",
   "hardness": "easy"
  }
 ]

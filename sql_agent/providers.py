@@ -91,17 +91,18 @@ def _cache():
         return None
     if _db is None:
         _db = sqlite3.connect(path, check_same_thread=False, timeout=30)
+        _db.execute("PRAGMA journal_mode=WAL")  # loop와 SQL-agent subprocess가 같은 db를 동시에 연다
         _db.execute("CREATE TABLE IF NOT EXISTS c (k TEXT PRIMARY KEY, v TEXT)")
     return _db
 
 
 def complete(ep: Endpoint, messages: list[dict], *, temperature: float, max_tokens: int, retries: int = 6) -> str:
-    """temperature 0 호출은 LLM_CACHE가 켜져 있으면 (endpoint, 모델, 메시지, max_tokens)로 캐시한다.
+    """temperature 0 호출은 LLM_CACHE가 켜져 있으면 (endpoint, 모델, 메시지, max_tokens, extra_body)로 캐시한다.
     같은 commit을 다시 재거나 screen 문제를 full에서 다시 풀 때, `route`·`fix`만 바꾼 patch를 잴 때(`generate` 메시지는 그대로) 호출이 줄어든다."""
     db = _cache() if temperature == 0 else None
     if db is None:
         return _call(ep, messages, temperature=temperature, max_tokens=max_tokens, retries=retries)
-    k = hashlib.sha256(json.dumps([ep.base_url, ep.model, messages, max_tokens], sort_keys=True).encode()).hexdigest()
+    k = hashlib.sha256(json.dumps([ep.base_url, ep.model, messages, max_tokens, ep.extra_body], sort_keys=True).encode()).hexdigest()
     with _lock:
         row = db.execute("SELECT v FROM c WHERE k=?", (k,)).fetchone()
     if row:
@@ -147,4 +148,6 @@ if __name__ == "__main__":  # python -m sql_agent.providers : 캐시 확인 (서
     assert complete(ep, msg, temperature=0.7, max_tokens=8) == "out4"                           # temperature > 0 은 캐시 안 함
     assert complete(ep, msg, temperature=0, max_tokens=16) == "out5"                            # max_tokens 다르면 다른 키
     assert complete(Endpoint("openai", "http://x/v1", "m2", "k"), msg, temperature=0, max_tokens=8) == "out6"  # 모델 다르면 다른 키
+    ep2 = Endpoint("openai", "http://x/v1", "m", "k", {"provider": {"order": ["a"]}})
+    assert complete(ep2, msg, temperature=0, max_tokens=8) == "out7"                                           # extra_body 다르면 다른 키(새 호출)
     print("cache ok")
