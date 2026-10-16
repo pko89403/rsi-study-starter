@@ -111,7 +111,7 @@ loop는 round마다 아래 순서로 돌고, 번호 붙은 곳에서 `hooks/`의
 - `should_stop`이 False면 다음 round의 `begin`으로 돌아간다.
 - hook은 노드 안에서 불리므로, hook만 바꾸는 사람은 LangGraph를 몰라도 된다.
 
-![한 round의 흐름과 hook 10개의 위치](docs/round.png)
+![한 round: Improver agent 안의 순서(hook → loop 단계)와 SQL agent로 넘어가는 지점(① 실행, ④ patch, ⑤ 재실행)](docs/round.png)
 
 ```
 parent = select_parent(archive)                 ① 어느 commit에서 시작하나        기본: 최고 점수 commit
