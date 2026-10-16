@@ -5,44 +5,77 @@
 - KNOBS: 참가자 hook이 선언한 손잡이(이름·타입·범위·기본값). Improver는 improver/incumbent.py의 IMPROVER 값만 바꾼다.
 """
 from __future__ import annotations
-import ast, hashlib, json
+import ast, hashlib, json, os, subprocess, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXED_FILES = ["data/validation.json", "data/test.json", "data/fewshot_pool.json", "data/tables.json",
                "scripts/test_eval.py", "evaluator/evaluate.py", "evaluator/rules_v0.py",
                "loop/run.py", "loop/patch.py", "loop/archive.py", "loop/kernel.py", "loop/meta.py", "loop/context.py", "loop/env.py",
-               ".claude/settings.json", "AGENTS.md"]
-RULER_TAG = "ruler-v1"   # 운영자가 고정 파일의 기준 commit에 단 tag. origin에 push 권한이 없는 참가자는 못 바꾼다
+               ".claude/settings.json", "AGENTS.md", "CLAUDE.md", ".gemini/settings.json"]
+FIXED_DIRS = ["data/database"]   # 채점용 SQLite. 내용이 바뀌면 점수가 바뀐다
+RULER_TAG = "ruler-v2"   # 고정 파일의 기준 commit에 운영자가 단 tag. 고정 파일을 바꿀 때마다 번호를 올리고 `make ruler`
+RULER_STATUS = "unchecked"   # require_ruler() 결과: ok | override | skipped | changed. round·test·meta 기록에 남는다
 IMPROVER_FILE = "improver/incumbent.py"
 WIDE_MARGIN = 4   # 많은 답이 바뀐 patch(프롬프트 수정 등)의 최소 순증. placebo 보정 전 기본값
 
 
+def _fixed_paths(root: Path) -> list[Path]:
+    out = [root / f for f in FIXED_FILES]
+    for d in FIXED_DIRS:
+        out += sorted((root / d).rglob("*.sqlite")) if (root / d).exists() else []
+    return out
+
+
 def anchors_sha(root: Path = ROOT) -> str:
     h = hashlib.sha256()
-    for f in FIXED_FILES:
-        p = root / f
-        h.update(f.encode()); h.update(p.read_bytes() if p.exists() else b"<missing>")
+    for p in _fixed_paths(root):
+        h.update(str(p.relative_to(root)).encode()); h.update(p.read_bytes() if p.exists() else b"<missing>")
     return h.hexdigest()[:12]
 
 
-def check_ruler(root: Path = ROOT) -> str | None:
-    """고정 파일이 origin의 RULER_TAG와 같은지 확인한다. 다르면 사유 문자열. tag가 없으면 None(검사 생략, 경고만).
-    일부러 바꾼 경우(README §6의 B)는 RULER_OVERRIDE=1 로 실행하고, 그 사실이 log와 test 결과에 남는다."""
-    import os, subprocess
-    r = subprocess.run(["git", "rev-parse", "-q", "--verify", f"refs/tags/{RULER_TAG}"], cwd=root, capture_output=True, text=True)
-    if r.returncode != 0:
-        print(f"[ruler] tag {RULER_TAG} 없음: 고정 파일 검사를 건너뜀 (git fetch --tags 로 받을 수 있다)")
+def _git(root: Path, *args, timeout: int = 20) -> str | None:
+    try:
+        r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
         return None
-    d = subprocess.run(["git", "diff", "--name-only", RULER_TAG, "--", *FIXED_FILES], cwd=root, capture_output=True, text=True)
-    changed = [l for l in d.stdout.splitlines() if l.strip()]
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def check_ruler(root: Path = ROOT, remote: bool = True) -> tuple[str, str]:
+    """고정 파일이 RULER_TAG(origin의 tag)와 같은지. 반환 (status, detail).
+    status: ok / override(RULER_OVERRIDE=1로 실행, 기록됨) / skipped(tag 없음) / changed(다름 → 실행 거부).
+    로컬 tag가 origin과 다르거나 없으면 origin에서 강제로 받아 온다 (참가자는 origin tag를 못 바꾼다)."""
+    ref = f"refs/tags/{RULER_TAG}"
+    local = _git(root, "rev-parse", "-q", "--verify", ref)
+    if remote:
+        ls = _git(root, "ls-remote", "--tags", "origin", RULER_TAG, timeout=15) or ""
+        origin = next((l.split()[0] for l in ls.splitlines() if l.strip().endswith(ref)), None)
+        if origin and origin != local:
+            _git(root, "fetch", "--force", "--tags", "origin", timeout=60)
+            local = _git(root, "rev-parse", "-q", "--verify", ref)
+    if not local:
+        return "skipped", f"tag {RULER_TAG} 없음 (git fetch --force --tags origin)"
+    d = _git(root, "diff", "--name-only", RULER_TAG, "--", *FIXED_FILES, *FIXED_DIRS)
+    changed = [l for l in (d or "").splitlines() if l.strip()]
     if not changed:
-        return None
-    msg = f"고정 파일이 {RULER_TAG}와 다름: {', '.join(changed)}"
+        return "ok", ""
+    detail = f"고정 파일이 {RULER_TAG}와 다름: {', '.join(changed)}"
     if os.environ.get("RULER_OVERRIDE") == "1":
-        print(f"[ruler] {msg} (RULER_OVERRIDE=1, 결과에 ruler_override=true 로 기록)")
-        return None
-    return msg
+        return "override", detail
+    return "changed", detail
+
+
+def require_ruler(root: Path = ROOT) -> str:
+    """make round / make test / make meta-* 시작 시 호출. changed면 종료. status를 RULER_STATUS에 둔다."""
+    global RULER_STATUS
+    status, detail = check_ruler(root)
+    RULER_STATUS = status
+    if status == "changed":
+        sys.exit(f"{detail}\n고정 파일을 되돌리거나(git checkout {RULER_TAG} -- <파일>), 일부러 바꾼 것이면 RULER_OVERRIDE=1 로 실행한다 (결과에 기록됨).")
+    if status != "ok":
+        print(f"[ruler] {status}: {detail}")
+    return status
 
 
 def kernel_accept(before: dict, after: dict, before_preds: dict, after_preds: dict, db_of: dict) -> tuple[bool, dict]:
@@ -192,21 +225,30 @@ if __name__ == "__main__":  # python -m loop.kernel : 판정·손잡이 확인 (
         read_improver(f); raise AssertionError("must reject non-literal")
     except ValueError:
         pass
-    assert describe(("str", 300, "")) == "free text of at most 300 characters (default '')"
     assert describe(("int", 3, 20, 10)) == "integer from 3 to 20 (default 10)"
     assert len(anchors_sha()) == 12
-    import os, subprocess
-    d = Path(tempfile.mkdtemp()); (d / "loop").mkdir(); (d / "data").mkdir()
-    for f in FIXED_FILES:
-        (d / f).parent.mkdir(parents=True, exist_ok=True); (d / f).write_text("x")
-    g = lambda *a: subprocess.run(["git", *a], cwd=d, capture_output=True, text=True, check=True)
-    g("init", "-q"); g("add", "-A"); g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "v0")
-    assert check_ruler(d) is None                               # tag 없음 → 건너뜀
-    g("tag", RULER_TAG)
-    assert check_ruler(d) is None                               # 같음
-    (d / "loop/run.py").write_text("y")
-    assert "loop/run.py" in (check_ruler(d) or "")              # 다름 → 거부 사유
-    os.environ["RULER_OVERRIDE"] = "1"
-    assert check_ruler(d) is None                               # override → 통과 (기록됨)
-    del os.environ["RULER_OVERRIDE"]
+    assert describe(("str", 300, "")) == "free text of at most 300 characters (default '')"
+    saved = os.environ.pop("RULER_OVERRIDE", None)
+    try:
+        d = Path(tempfile.mkdtemp())
+        for f in FIXED_FILES:
+            (d / f).parent.mkdir(parents=True, exist_ok=True); (d / f).write_text("x")
+        (d / "data/database/db1").mkdir(parents=True); (d / "data/database/db1/db1.sqlite").write_bytes(b"s")
+        g = lambda *a: subprocess.run(["git", "-c", "commit.gpgsign=false", "-c", "tag.gpgSign=false", *a], cwd=d, capture_output=True, text=True, check=True)
+        g("init", "-q"); g("add", "-A"); g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "v0")
+        assert check_ruler(d, remote=False)[0] == "skipped"            # tag 없음 → skipped
+        g("tag", RULER_TAG)
+        assert check_ruler(d, remote=False)[0] == "ok"
+        (d / "loop/run.py").write_text("y")
+        st, why = check_ruler(d, remote=False)
+        assert st == "changed" and "loop/run.py" in why
+        os.environ["RULER_OVERRIDE"] = "1"
+        assert check_ruler(d, remote=False)[0] == "override"
+        del os.environ["RULER_OVERRIDE"]
+        (d / "loop/run.py").write_text("x")
+        (d / "data/database/db1/db1.sqlite").write_bytes(b"t")
+        assert check_ruler(d, remote=False)[0] == "changed"            # 채점 DB 변경도 잡는다
+    finally:
+        if saved is not None:
+            os.environ["RULER_OVERRIDE"] = saved
     print("kernel ok")

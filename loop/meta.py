@@ -27,7 +27,7 @@ def ledger() -> list[dict]:
 def log_ledger(rec: dict) -> None:
     LEDGER.parent.mkdir(exist_ok=True)
     with open(LEDGER, "a") as f:
-        f.write(json.dumps({"time": time.strftime("%Y-%m-%d %H:%M"), **rec}, ensure_ascii=False) + "\n")
+        f.write(json.dumps({"time": time.strftime("%Y-%m-%d %H:%M"), "ruler": K.RULER_STATUS, "anchors_sha": K.anchors_sha(), **rec}, ensure_ascii=False) + "\n")
 
 
 def load(path: Path, schema: dict) -> dict:

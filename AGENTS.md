@@ -10,7 +10,7 @@
 - `data/` — validation 100 · test 200 · few-shot pool 300 · SQLite DB
 - `sql_agent/run.py` — SQL agent. EVOLVE-BLOCK은 Improver agent의 patch로만 바뀐다
 - `improver/incumbent.py` — Improver agent의 손잡이 값. `make meta-adopt`로만 바뀐다
-- `.claude/settings.json`, 이 파일(`AGENTS.md`)
+- `.claude/settings.json`, `CLAUDE.md`, `.gemini/settings.json`, 이 파일(`AGENTS.md`)
 
 `loop/prompts/*.md`는 고쳐도 된다 (8주차 goal 변경). `loop/run.py`에 노드를 더하는 것(README §6의 B)은 사람이 직접 하고 "전제 조건"에 적는다.
 
@@ -25,4 +25,4 @@
 
 - `data/test.json`과 test 예측 파일은 열지 않는다. test 점수를 보고 method를 고르지 않는다.
 - 셸 명령으로 고정 파일을 바꾸는 것(`sed -i`, 리다이렉션 등)도 같은 규칙이다.
-- 고정 파일이 바뀌면 `make round`·`make test`가 `ruler-v1` tag와 비교해 실행을 거부한다. 일부러 바꾼 경우에만 `RULER_OVERRIDE=1`로 돌리고, 그 사실이 로그와 결과에 남는다.
+- 고정 파일이 바뀌면 `make round`·`make test`가 origin의 `ruler-vN` tag(`loop/kernel.py`의 `RULER_TAG`)와 비교해 실행을 거부한다. 일부러 바꾼 경우에만 `RULER_OVERRIDE=1`로 돌리고, 그 사실이 로그와 결과에 남는다.

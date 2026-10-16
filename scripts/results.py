@@ -15,6 +15,8 @@ def main() -> None:
     first, last = rows[0], rows[-1]
     best_after = max((r["full"]["after"] for r in rows if r["accepted"]), default=None)
     print(f"week {a.week}: rounds {len(rows)}, hook_changed={last['hook_changed']}")
+    rul = Counter(r.get("ruler", "?") for r in rows); anch = sorted({r.get("anchors_sha", "?") for r in rows})
+    print(f"고정 파일 검사: {dict(rul)} | anchors_sha: {', '.join(anch)}" + ("  ← override/변경 있음. 전제 조건에 적을 것" if set(rul) - {"ok"} else ""))
     print(f"validation 전/후: {first['full']['before']}/{first['full']['n']} -> {best_after if best_after is not None else first['full']['before']}/{first['full']['n']}")
     print(f"비용: LLM 호출 {sum(r['llm_calls'] for r in rows)}회, {sum(r['seconds'] or 0 for r in rows)/60:.1f}분")
     print("accept", sum(r["accepted"] for r in rows), "/ 거부 사유:", dict(Counter(r["rejected_by"] for r in rows if r["rejected_by"])))

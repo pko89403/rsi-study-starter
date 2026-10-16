@@ -10,8 +10,8 @@ round:
 results:
 	uv run python -m scripts.results --week $(W)
 
-ruler:   # 운영자만: 지금 commit을 고정 파일의 기준으로 (tag를 origin에 push)
-	git tag -f ruler-v1 && git push -f origin ruler-v1
+ruler:   # 운영자만: 지금 commit을 고정 파일의 기준으로. loop/kernel.py의 RULER_TAG 번호를 올린 뒤 실행 (tag를 origin에 push)
+	T=$$(uv run python -c "from loop.kernel import RULER_TAG; print(RULER_TAG)"); git tag -f $$T && git push -f origin $$T && echo "tagged $$T"
 
 meta-propose:
 	uv run python -m loop.meta propose

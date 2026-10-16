@@ -181,9 +181,9 @@ hook 안에서 할 수 있는 것:
 
 고정 파일은 세 겹으로 지킨다.
 
-- **코딩 어시스턴트 차단:** `.claude/settings.json`이 Claude Code의 고정 파일 편집을 막는다(하드 차단). `AGENTS.md`(Codex·Gemini CLI가 읽음)에 같은 목록이 있다(권고).
-- **실행 거부:** `make round`·`make test`·`make meta-*`는 시작할 때 고정 파일을 origin의 `ruler-v1` tag와 비교한다. 다르면 실행하지 않는다.
-  일부러 바꾼 경우(B)에만 `RULER_OVERRIDE=1 make round`로 돌리고, `rounds.jsonl`과 test 결과에 `ruler_override: true`가 남는다. 그 주 결과는 "전제 조건"에 적는다.
+- **코딩 어시스턴트 차단:** `.claude/settings.json`이 Claude Code의 Edit/Write 도구로 고정 파일을 고치는 것을 막는다. 셸 명령(`sed -i`, 리다이렉션)까지 막지는 못한다. `AGENTS.md`(Codex·Gemini CLI가 읽음)에 같은 목록이 있다(권고).
+- **실행 거부:** `make round`·`make test`·`make meta-*`는 시작할 때 고정 파일(채점용 SQLite 포함)을 origin의 `ruler-vN` tag와 비교한다. 다르면 실행하지 않는다. tag는 origin에서 자동으로 받아 온다.
+  일부러 바꾼 경우(B)에만 `RULER_OVERRIDE=1 make round`로 돌리고, `rounds.jsonl`·test 결과·`improver_ledger.jsonl`에 `ruler: override`가 남는다. tag가 없으면 `ruler: skipped`로 남는다. 그 주 결과는 "전제 조건"에 적고 `make results`가 표시한다.
 - **기록:** 고정 파일 hash(`anchors_sha`)와 모델 id가 round마다, test 결과마다 남는다. `make round` 도중에 바뀌면 loop가 멈춘다.
 
 loop는 hook 내용은 검사하지 않는다. 규칙으로 지킨다.
@@ -215,8 +215,8 @@ round, parent, 대상 EVOLVE-BLOCK 내용, before 평가 결과(문제별 정오
 4. test 결과를 loop의 입력으로 쓰지 않는다. 사람도 test 점수를 보고 다음 주 method를 고르지 않는다 (결과 표에만 적는다)
 5. `logs/rounds.jsonl` 한 줄의 필드 (`scripts/results.py`가 읽는다)
 
-나머지는 자유다. 1·2·5번의 파일은 `ruler-v1` tag와 비교해 실행 전에 확인한다(위 4). 3·4번은 코드가 막지 않는다. 규칙으로 지킨다.
-운영자는 고정 파일을 바꿀 때마다 `make ruler`로 tag를 다시 단다.
+나머지는 자유다. 1·2·5번의 파일은 `ruler-vN` tag와 비교해 실행 전에 확인한다(위 4). 3·4번은 코드가 막지 않는다. 규칙으로 지킨다.
+운영자는 고정 파일을 바꿀 때마다 `loop/kernel.py`의 `RULER_TAG` 번호를 올리고 `make ruler`로 tag를 단다.
 
 method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 아래 넷 중 하나다.
 
