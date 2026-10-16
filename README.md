@@ -80,19 +80,19 @@ make results W=1             # 그 주의 결과 표
 
 ### 2-1. SQL agent의 모양
 
-문제 하나를 graph 한 번으로 푼다. 배선은 고정이고, 노드 본문만 EVOLVE-BLOCK이다.
+문제 하나를 graph 한 번으로 푼다. 노드는 4개(`select_schema`, `generate`, `execute`, `fix`)이고, `route`는 `execute` 뒤에서 다음 노드를 고르는 분기 함수다. 배선은 고정이고, 노드 본문과 `route` 본문만 EVOLVE-BLOCK이다.
 
 ```
 START → select_schema → generate → execute → route ─┬─ "fix" → fix → execute (다시)
                                                     └─ END
 ```
 
-| 노드 | 하는 일 | v0 동작 | 어디에 있나 |
+| 노드 · 분기 함수 | 하는 일 | v0 동작 | 어디에 있나 |
 |---|---|---|---|
 | `select_schema` | 질문과 관련된 테이블만 남긴다 | 전체 스키마 그대로 | `code` 블록 |
 | `generate` | 스키마 + few-shot → SQL | LLM 1회 | `code` 블록 (메시지는 `prompt` 블록) |
 | `execute` | SQL을 읽기 전용으로 실행 (5초 상한) | 실행함 | 고정 |
-| `route` | END로 갈지 fix로 갈지 | 항상 END (재시도 없음) | `code` 블록 |
+| `route` (분기 함수) | END로 갈지 fix로 갈지 | 항상 END (재시도 없음) | `code` 블록 |
 | `fix` | 오류를 보여 주고 SQL을 다시 받는다 | 안 불림 | `code` 블록 |
 
 - v0는 문제당 LLM 1회로 이전과 같은 점수를 낸다.
