@@ -56,7 +56,7 @@ make meta-eval               # 내 archive에서 기존 vs 수정안 짝 비교 
 make meta-adopt              # 수정안 채택 (본인이 정한다)
 ```
 
-- v0 기준값 (gpt-4.1-nano, `ruler-v6` 데이터): validation 66/100, test 약 131/200 (3회 132·129·133). 두 split의 v0 정답 비율이 같게 뽑았다.
+- v0 기준값 (gpt-4.1-nano, `ruler-v7` 데이터): validation 66/100, test 약 131/200 (3회 132·132·131). 두 split의 v0 정답 비율이 같게 뽑았다.
 - 시간 (병렬 8): `make test` 약 1분 반, 1 round 약 30초, 20 round 약 10분. `make meta-eval` 10~15분.
 - `make` 없이 돌리려면 `uv run`을 붙인다. 예: `uv run python -m scripts.test_eval --runs 3`. venv activate는 필요 없다.
 - LLM 없이 loop 동작만 보려면 `LLM_BACKEND=mock`을 붙인다. 점수는 의미 없다.
@@ -332,7 +332,8 @@ def build_prompt(ctx):
 
 - **`고정 파일이 ruler-vN와 다름`**: 고정 파일을 고쳤거나 tag가 오래됐다. `git pull` 후 다시 돌린다. 일부러 바꾼 경우(아래 6의 B)만 `RULER_OVERRIDE=1`.
 - **`[env] LLM_MODEL=...: 평가 조건 3은 gpt-4.1-nano`**: `.env`의 모델을 확인한다. Azure 배포 이름이 달라서 뜬 것이면 무시해도 된다.
-- **`N/200 문제에서 SQL agent가 실패`** (`make test`): 키·모델·네트워크 오류다. 이 상태의 점수는 기록하지 않는다.
+- **`N/200 문제의 답이 비어 점수를 믿을 수 없다`** (`make test`): 키·모델·네트워크 오류이거나, 추론 모델이 `LLM_MAX_TOKENS`에 걸려 빈 답을 낸 것이다. 이 상태의 점수는 기록하지 않는다.
+- **`[setup] 데이터·채점이 바뀜`**: `git pull`로 데이터나 채점 코드가 바뀌었다. 이전 기록은 `logs/old-<sha>/`로 옮겨지고 champion 코드부터 새 데이터로 다시 잰다. 이전 주 결과와 점수를 직접 비교하지 않는다.
 - **LM Studio**: 모델을 context 16384로 로드한다(`lms load <모델> -c 16384`).
   기본 context(8192)면 Improver LLM 프롬프트와 출력이 넘칠 수 있다. 자세한 것은 위키 [로컬 LM Studio](https://github.com/pko89403/rsi-study-starter/wiki/로컬-LM-Studio).
 - **LLM 응답 캐시**: `make round`는 temperature 0 응답을 `logs/llm_cache.sqlite`에 캐시한다(같은 commit 재평가, screen 문제 재풀이가 공짜).
