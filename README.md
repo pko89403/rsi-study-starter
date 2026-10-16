@@ -3,9 +3,11 @@
 각자 두 가지를 가지고 시작한다.
 
 - **SQL agent**: 질문을 받아 SQL을 낸다. 개선 대상이다.
-- **Improver**: SQL agent를 고치는 장치다. loop + Improver LLM + hook 10개로 이루어진다.
+- **Improver agent**: SQL agent를 고치는 장치다. loop + Improver LLM + hook 10개로 이루어진다.
+  자기 방법(hook이 선언한 손잡이 값)도 스스로 다듬는다. 아래 7.
 
 매주 발제 논문의 method를 hook 하나에 넣어 돌려 보고, 같은 양식으로 경험을 적는다.
+그 위에서 Improver agent가 자기 방법을 다듬고, 그 수정안을 채택할지는 각자 정한다.
 이 repo는 그 최소 형태다.
 
 설계 이유, 데이터 형식, 주차별 로드맵 같은 배경은 [위키](https://github.com/pko89403/rsi-study-starter/wiki)에 있다.
@@ -34,12 +36,14 @@ cp .env.example .env         # 열어서 아래 값을 채운다
 ```bash
 LLM_BASE_URL=https://openrouter.ai/api/v1
 LLM_API_KEY=<OpenRouter 키>
-LLM_MODEL=qwen/qwen-2.5-7b-instruct
-LLM_PROVIDER=Phala           # provider 고정. 양자화가 같아야 점수를 나란히 놓을 수 있다
+LLM_MODEL=openai/gpt-4.1-nano
+LLM_PROVIDER=Azure           # provider 고정 (전원 같은 서빙 조건)
 LLM_CONCURRENCY=8            # 병렬 호출 수
 ```
 
-로컬 LM Studio로 쓰려면 위키 [로컬 LM Studio](https://github.com/pko89403/rsi-study-starter/wiki/로컬-LM-Studio)를 따른다.
+- SQL agent와 Improver LLM 모두 이 모델을 쓴다. temperature는 둘 다 0으로 코드에 고정돼 있다.
+- Azure OpenAI 배포가 있으면 `LLM_BASE_URL=https://<리소스>.openai.azure.com/`, `LLM_MODEL=<배포 이름>`, `LLM_PROVIDER` 비움.
+- 로컬 LM Studio로 쓰려면 위키 [로컬 LM Studio](https://github.com/pko89403/rsi-study-starter/wiki/로컬-LM-Studio)를 따른다. 모델이 달라지므로 "전제 조건"에 적는다.
 
 **실행**
 
@@ -47,6 +51,9 @@ LLM_CONCURRENCY=8            # 병렬 호출 수
 make test                    # v0 test score (200문제 × 3회 평균)
 make round                   # 20 round. N=1 이면 1 round. logs/rounds.jsonl 에 round당 한 줄
 make results W=1             # 그 주의 결과 표
+make meta-propose            # Improver agent가 자기 손잡이 수정안을 낸다 (아래 7)
+make meta-eval               # 내 archive에서 기존 vs 수정안 짝 비교 → 판정 카드
+make meta-adopt              # 수정안 채택 (본인이 정한다)
 ```
 
 - `make` 없이 돌리려면 `uv run`을 붙인다. 예: `uv run python -m scripts.test_eval --runs 3`. venv activate는 필요 없다.
@@ -67,11 +74,14 @@ make results W=1             # 그 주의 결과 표
 | `sql_agent/run.py` | SQL agent (LangGraph, 아래 2-1) | Improver agent (`editable_blocks`에 적힌 EVOLVE-BLOCK만) |
 | `sql_agent/llm.py`, `schema.py` | LLM 호출, 스키마 텍스트 | 사람 |
 | `evaluator/evaluate.py` | SQL 실행 결과를 정답과 비교 | 고정 |
-| `evaluator/rules.py` | validation 채점 규칙. `evaluator` EVOLVE-BLOCK | Improver agent (6주차에 `editable_blocks`에 추가한 뒤) |
+| `evaluator/rules.py` | `evaluator` EVOLVE-BLOCK. 판정(accept·champion·meta)은 고정 복사본 `rules_v0`로 하므로, 열어도 점수에 영향이 없다 | (열지 않는 것을 권함, 아래 5) |
 | `evaluator/rules_v0.py` | test 채점 규칙 (고정 복사본) | 고정 |
 | `loop/run.py` | round loop. LangGraph `StateGraph` (아래 3) | 고정 (B는 예외, 아래 6) |
-| `loop/patch.py` | EVOLVE-BLOCK 교체, guard | 고정 |
-| `loop/archive.py` | git commit/checkout, 최고 commit 추적 | 고정 |
+| `loop/kernel.py` | 고정 kernel: 최종 accept 판정, champion 규칙, 손잡이(KNOBS) 검사, 고정 파일 hash | 고정 |
+| `loop/patch.py` | EVOLVE-BLOCK 교체, AST guard, patch 정규화 | 고정 |
+| `loop/archive.py` | git commit/checkout, champion 추적 | 고정 |
+| `loop/meta.py` | Improver agent 자기 개선: `meta-propose` / `meta-eval` / `meta-adopt` (아래 7) | 고정 |
+| `improver/incumbent.py` | Improver agent의 손잡이 값 (`IMPROVER = {...}`, 데이터만) | Improver agent (수정안) → 각자 채택 |
 | `loop/prompts/` | 진단·patch 프롬프트 | 사람 (8주차에 goal 바꾸기) |
 | `hooks/*.py` | 결정 지점 10개. **매주 method는 이 중 하나의 본문을 바꾼다** | 각자 |
 | `data/test.json` | test. loop는 열지 않는다 | 아무도 |
@@ -114,38 +124,47 @@ loop는 round마다 아래 순서로 돌고, 번호 붙은 곳에서 `hooks/`의
 ![한 round: Improver agent 안의 순서(hook → loop 단계)와 SQL agent로 넘어가는 지점(① 실행, ④ patch, ⑤ 재실행)](docs/round.png)
 
 ```
-parent = select_parent(archive)                 ① 어느 commit에서 시작하나        기본: 최고 점수 commit
+parent = select_parent(archive)                 ① 어느 commit에서 시작하나        기본: champion
 checkout → before = 실행·평가(validation 100)      같은 commit은 다시 재지 않음
 on_round_start(ctx)                             ② round 시작 직후 할 일            기본: 없음
 ctx.diagnosis = diagnose(ctx)                   ③ 틀린 문제 → 원인 한 줄           기본: LLM 1회 (diagnose.md)
-patches = propose(ctx, build_prompt(ctx))       ④ 무엇을 보여 주고 ⑤ 후보를 몇 개   기본: LLM 1회, patch 1개
-for patch in patches:
-    patch = review_patch(ctx, patch)            ⑥ 적용 전 검토·수정·거부           기본: 그대로. None → rejected_by=review
-    guard → EVOLVE-BLOCK 교체 → compile 검사 → commit
-    screen(20문제)
-    after_screen(ctx, before20, after20)        ⑦ full로 갈지                     기본: screen_drop(2) 이상 떨어지면 중단
-    full(100문제) → after
-    accept(ctx, before, after, patch)           ⑧ 남길지                          기본: noise_margin(3) 이상 오르면 새 최고
+patch = propose(ctx, build_prompt(ctx))         ④ 무엇을 보여 주고 ⑤ 후보를 어떻게   기본: LLM 1회, patch 1개
+  평가 전 검사: 대상 블록이 맞나, 변경이 있나, 이미 시도한 patch인가, guard(AST)
+  → 걸리면 이유를 붙여 다시 묻는다 (최대 3회). round당 평가하는 patch는 1개
+patch = review_patch(ctx, patch)                ⑥ 적용 전 검토·수정·거부           기본: 그대로. None → rejected_by=review
+guard → EVOLVE-BLOCK 교체 → compile 검사 → commit
+screen(20문제)
+after_screen(ctx, before20, after20)            ⑦ full로 갈지                     기본: screen_drop(2) 이상 떨어지면 중단
+full(100문제) → after
+accept(ctx, before, after, patch) AND kernel    ⑧ 남길지                          기본: hook은 True. kernel이 판정한다 (아래)
+champion 갱신                                     accept된 commit이 champion보다 높을 때만
 after_eval(ctx)                                 ⑨ round 뒤 기록·축적               기본: 없음
 rounds.jsonl 한 줄
 should_stop(ctx)                                ⑩ 일찍 멈출지                      기본: False
 ```
 
+- **판정은 전부 고정 채점(`rules_v0`)**이다. kernel accept(`loop/kernel.py`)는 문제별로 짝지어 센다.
+  - 순증 = 새로 맞힌 문제 수 − 새로 틀린 문제 수.
+  - 바뀐 답이 3개 이하: 순증 ≥ 1이고 잃은 문제 0. 12개 이하: 순증 ≥ 2이고 잃은 문제 ≤ 1. 그 밖: 순증 ≥ 4.
+  - 순증 ≥ 2면 얻은 문제가 2개 이상의 DB에 걸쳐야 한다.
+  - `accept` hook은 이 판정과 AND로 묶인다. 조건을 더 엄격하게 할 수만 있다.
+- **champion은 내려가지 않는다.** parent보다 나아서 accept돼도, champion보다 높을 때만 champion이 된다.
 - rollback은 없다. 모든 patch가 commit으로 남고, 다음 round는 `select_parent`가 고른 commit에서 시작한다.
 - 거부 사유(`rejected_by`):
-  - `guard`: EVOLVE-BLOCK 밖 수정, `editable_blocks`에 없는 블록, 금지 문자열, compile 실패, 변경 없음
-  - `review`, `screen`, `accept`, `error`
-- Improver LLM 출력 상한은 `config.yaml`의 `improver_max_tokens`(기본 4096)다.
-  - 7B의 정상 patch는 300~600토큰이다.
-  - 추론 모델(Qwen3, gpt-oss)을 쓰면 생각 토큰도 여기서 쓰므로 8192~16384로 올린다.
+  - `guard`: 대상 블록 아님, 변경 없음, 이미 시도함, AST guard(import·파일·프로세스·정답 접근), compile 실패
+  - `review`, `screen`, `accept`(kernel 판정 미달), `error`
+- `rounds.jsonl`에 남는 것: `net`, `fixed_ids`, `broken_ids`, `changed`, `kernel_accept`, `hook_accept`, `champion`, `resamples`(재요청 수), `improver_sha`, `anchors_sha`, 모델 id.
+- Improver LLM 출력 상한은 `config.yaml`의 `improver_max_tokens`(기본 4096)다. 추론 모델을 쓰면 생각 토큰도 여기서 쓰므로 8192~16384로 올린다.
 
 ## 4. method를 넣는 법
 
 1. `hooks/` 안의 함수 하나(또는 둘)의 본문을 바꾼다. 시그니처는 그대로 둔다.
    hook에 안 들어가는 method는 아래 6의 B·C를 따른다.
-2. `config.yaml`의 `hook_changed`에 바꾼 hook 이름을, `week`에 주차를 적는다.
-3. `make round`
-4. `make test`, `make results W=N`으로 결과 표를 채운다.
+2. method에서 Improver agent가 조절해도 되는 값은 `KNOBS`로 선언한다 (아래 7). 안 해도 된다.
+3. `config.yaml`의 `hook_changed`에 바꾼 hook 이름을, `week`에 주차를 적는다.
+4. `make round`
+5. `make test`, `make results W=N`으로 결과 표를 채운다.
+6. 원하면 `make meta-propose` → `make meta-eval` → (판정을 보고) `make meta-adopt`.
 
 hook 안에서 할 수 있는 것:
 
@@ -157,9 +176,11 @@ hook 안에서 할 수 있는 것:
 
 - `data/test.json` 열기
 - `sql_agent/run.py`의 EVOLVE-BLOCK을 사람이 고치기 (SQL agent 변경은 patch 경로로만)
-- `loop/run.py` 밖의 `loop/`·`evaluator/` 고치기
+- `loop/*.py`·`evaluator/`·`scripts/test_eval.py` 고치기 (고정 kernel. `loop/run.py`에 노드를 더하는 B만 예외)
+- `improver/incumbent.py`를 사람이 직접 고치기 (Improver agent의 수정안을 `make meta-adopt`로만)
 
 loop는 hook을 검사하지 않는다. 규칙으로 지킨다.
+고정 파일의 hash는 `rounds.jsonl`의 `anchors_sha`에 남고, `make round` 도중에 바뀌면 loop가 멈춘다.
 
 예: Reflexion
 
@@ -167,11 +188,13 @@ loop는 hook을 검사하지 않는다. 규칙으로 지킨다.
 - `build_prompt`가 그 파일을 읽어 prompt에 넣는다.
 
 `RoundContext`(`loop/context.py`)에 들어 있는 것:
-round, parent, 현재 EVOLVE-BLOCK 내용, before 평가 결과(문제별 정오·error), 문제·예측 조회, 진단, screen·after 결과, patch, accepted, 지난 log 5줄, `ctx.llm(...)`.
+round, parent, 대상 EVOLVE-BLOCK 내용, before 평가 결과(문제별 정오·error), 문제·예측 조회(정답 SQL은 없다), 진단, screen·after 결과, patch, accepted, 지난 log 5줄, `ctx.llm(...)`, `ctx.improver`(손잡이 값), `ctx.seed`(round 번호. 표본을 섞는 데 쓴다).
 
 ## 5. 주차별로 `editable_blocks`에 추가하는 것
 
 `config.yaml`의 `editable_blocks`에 블록 이름을 더하면 Improver agent가 그 블록을 고칠 수 있다.
+열린 블록은 round마다 돌아가며 대상이 된다. 이전 주에 연 블록은 닫지 않는다.
+`evaluator` 블록은 열어도 판정(`rules_v0`)에 영향이 없으므로 열지 않는다. 자기 평가 method는 `review_patch`·`accept` hook에 넣는다.
 
 주차별 예와 4주차 `code` 블록 예(노드 본문·`route`)는 위키 [주차별 로드맵](https://github.com/pko89403/rsi-study-starter/wiki/주차별-로드맵)에 있다.
 
@@ -182,8 +205,8 @@ round, parent, 현재 EVOLVE-BLOCK 내용, before 평가 결과(문제별 정오
 
 1. 데이터: `data/validation.json`·`test.json`·`fewshot_pool.json` (6주차 전까지)
 2. test 채점: `scripts/test_eval.py` + `evaluator/rules_v0.py`
-3. 모델: Qwen2.5-7B-Instruct, temperature 0
-4. test 결과를 loop의 입력으로 쓰지 않는다
+3. 모델: SQL agent·Improver LLM 모두 gpt-4.1-nano, temperature 0 (코드 고정)
+4. test 결과를 loop의 입력으로 쓰지 않는다. 사람도 test 점수를 보고 다음 주 method를 고르지 않는다 (결과 표에만 적는다)
 5. `logs/rounds.jsonl` 한 줄의 필드 (`scripts/results.py`가 읽는다)
 
 나머지는 자유다. 1~5번은 코드가 막지 않는다. 규칙으로 지킨다.
@@ -229,9 +252,55 @@ method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 
 - **가중치를 학습하는 method**(self-reward, STaR 등 Training-time)는 모델이 고정이라 그대로는 안 된다.
   in-context 버전(맞춘 예시를 pool에 쌓기, 문제를 만드는 노드)으로 바꿔 체험하고 "전제 조건"에 적는다.
 
-## 7. 결과 표
+## 7. Improver agent의 자기 개선 (RSI 층)
 
-매주 같은 6칸을 적는다.
+참가자가 hook에 method를 넣으면, Improver agent는 그 method의 **손잡이**를 스스로 다듬는다.
+"무엇을 할지"는 사람이, "얼마나·어떻게 할지"는 Improver agent가 정하는 구조다.
+
+**손잡이 선언 (`KNOBS`)**
+
+hook 파일에 조절 가능한 값을 선언하고, `ctx.improver`로 읽는다.
+
+```python
+# hooks/build_prompt.py
+KNOBS = {
+    "n_wrong":  ("int", 3, 20, 10),      # (타입, 최소, 최대, 기본값)
+    "guidance": ("str", 400, ""),        # (타입, 최대 길이, 기본값)
+}
+KNOB_DOCS = {"n_wrong": "how many wrong examples the patch prompt shows", "guidance": "..."}   # Improver LLM이 읽는다
+
+def build_prompt(ctx):
+    n = ctx.improver.get("n_wrong", 10)
+    ...
+```
+
+- 타입: `int`, `float`, `enum`(선택지 목록), `str`, `bool`. 범위 밖 값은 kernel이 기본값으로 되돌린다.
+- 값은 `improver/incumbent.py`의 `IMPROVER = {...}`에 있다. 데이터만 있고 실행되지 않는다.
+- 주차가 쌓이면 손잡이도 쌓인다. 이전 주 method의 손잡이도 계속 조절 대상이다.
+
+**명령**
+
+| 명령 | 하는 일 |
+|---|---|
+| `make meta-propose` | Improver LLM이 손잡이 1~2개를 바꾼 수정안을 `improver/challenger.py`에 쓴다 (가설 한 줄 포함) |
+| `make meta-eval [FILE=...] [N=60]` | 내 archive의 parent·오답 표본으로 서로 다른 상황 N개를 만들고, 기존 값과 수정안이 각각 낸 patch의 순증을 짝지어 비교한다 |
+| `make meta-adopt [FORCE=1 REASON="..."]` | 수정안을 incumbent로 채택하고 commit한다. 판정이 ADOPT가 아니면 FORCE와 사유가 필요하다 |
+
+**판정 카드 읽는 법**
+
+- `ADOPT-RECOMMENDED`: 수정안이 통계적으로 낫다(단측 p < 0.05, 같은 주 K번째 판정이면 0.05/K). 유효 patch 비율도 떨어지지 않았다.
+- `KEEP`: 차이를 확인할 수 없다. **대부분의 주는 여기서 끝난다. 정상이다.**
+- `REJECT`: 수정안이 더 나쁘거나 유효 patch 비율이 떨어졌다.
+- `NULL`: 두 버전의 Improver 입력이 같다. hook이 바뀐 손잡이를 읽지 않는 것이다.
+- `COSMETIC` / `MECH-FAIL` / `HOLD`: patch가 거의 같음 / 둘 다 patch를 못 냄 / parent가 3개 미만.
+- 채택 여부는 본인이 정한다. 동료가 공유한 수정안은 `FILE=`로 내 환경에서 다시 잰다. 숫자를 합치지 않는다.
+- 비용: 상황 60개 기준 LLM 호출 약 5,000회, OpenRouter gpt-4.1-nano로 약 $1~2, 10~15분.
+- 모든 제안·판정·채택은 `logs/improver_ledger.jsonl`에 남는다.
+- 8주차: v0 값(`IMPROVER = {}`)을 `FILE=`로 넣고 새 seed(`SEED=`)로 한 번 더 잰다. 자기 수정이 실제로 효과가 있었는지 보는 지표다.
+
+## 8. 결과 표
+
+매주 같은 7칸을 적는다.
 
 - validation 전/후
 - test 전/후
@@ -239,17 +308,19 @@ method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 
 - 실패 유형
 - 전제 조건
 - 서비스에 넣는다면
+- Improver 자기 수정: 제안 / 판정 / 채택 여부
 
 칸별 설명과 읽는 법은 위키 [결과 표](https://github.com/pko89403/rsi-study-starter/wiki/결과-표)에 있다.
 
-## 8. 자주 막히는 곳
+## 9. 자주 막히는 곳
 
 - **LM Studio**: 모델을 context 16384로 로드한다(`lms load <모델> -c 16384`).
   기본 context(8192)면 Improver LLM 프롬프트와 출력이 넘칠 수 있다. 자세한 것은 위키 [로컬 LM Studio](https://github.com/pko89403/rsi-study-starter/wiki/로컬-LM-Studio).
 - **LLM 응답 캐시**: `make round`는 temperature 0 응답을 `logs/llm_cache.sqlite`에 캐시한다(같은 commit 재평가, screen 문제 재풀이가 공짜).
   같은 모델 id로 다른 모델 파일(양자화)을 로드했으면 이 파일을 지운다. 끄려면 `LLM_CACHE= make round`. `make test`는 캐시를 쓰지 않는다.
 - **agent timeout**: `config.yaml`의 `agent_timeout_sec`(기본 1800초). 100문제 × 모델 속도.
-- **round 하나가 몇 분씩 걸림**: Improver LLM이 같은 내용을 반복하다 `improver_max_tokens`까지 쓰는 경우다. 7B에서 가끔 생긴다.
+- **round 하나가 몇 분씩 걸림**: Improver LLM이 같은 내용을 반복하다 `improver_max_tokens`까지 쓰는 경우다 (로컬 소형 모델에서 가끔).
   그 patch는 parse 실패로 거부된다. 상한을 올려도 결과는 같고 시간만 늘어난다.
-- **점수가 전혀 안 움직임**: 7B Improver LLM에서는 흔하다. 거부가 많은 것이 정상이다.
+- **점수가 전혀 안 움직임**: 흔하다. 거부가 많은 것이 정상이고, `rejected_by`와 `net`을 보면 어디서 막히는지 보인다.
+  같은 patch만 반복하면 `resamples`가 3으로 찍힌다. 이때 `make meta-propose`로 손잡이를 바꿔 보는 것이 RSI 층의 역할이다.
   Improver LLM 교체는 평가 조건 3을 바꾸는 일이라 전원이 함께 정한다.
