@@ -1,6 +1,19 @@
 install:
 	uv sync
 
+check:   # LLM 비용 없이 설치를 확인: self-check + mock 2 round (별도 git worktree, 자기 logs/는 안 건드림)
+	uv run python -m loop.kernel
+	uv run python -m loop.patch
+	uv run python -m loop.meta selfcheck
+	uv run python -m sql_agent.providers
+	uv run python -m scripts.make_splits selfcheck
+	uv run python -m scripts.make_catalog selfcheck
+	@T=$$(mktemp -d) && git worktree add --detach --quiet "$$T" HEAD && \
+	(cd "$$T" && LLM_BACKEND=mock LLM_BASE_URL=x LLM_MODEL=mock RULER_OVERRIDE=1 uv run python -m loop.run --rounds 2); rc=$$?; \
+	git worktree remove --force "$$T"; \
+	exit $$rc
+	@echo "check ok"
+
 test:
 	uv run python -m scripts.test_eval --runs 3
 

@@ -348,5 +348,40 @@
   "id": "dev_0961",
   "db_id": "dog_kennels",
   "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_4540",
+  "db_id": "document_management",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0790",
+  "db_id": "world_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0716",
+  "db_id": "world_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0717",
+  "db_id": "world_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0484",
+  "db_id": "wta_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0464",
+  "db_id": "wta_1",
+  "reason": "gold 결과가 정해져 있지 않음 (GROUP BY 뒤 집계 없는 열)"
+ },
+ {
+  "id": "dev_0740",
+  "db_id": "world_1",
+  "reason": "gold 결과가 정해져 있지 않음 (공동 1위에 LIMIT 1)"
  }
 ]

@@ -1,6 +1,6 @@
 """rounds.jsonl → 결과 표 5칸 중 자동으로 채울 수 있는 것(전/후, 비용, 거부 사유 분포)."""
 from __future__ import annotations
-import argparse, json
+import argparse, json, os
 from collections import Counter
 from pathlib import Path
 
@@ -19,6 +19,12 @@ def main() -> None:
     print(f"고정 파일 검사: {dict(rul)} | anchors_sha: {', '.join(anch)}" + ("  ← override/변경 있음. 전제 조건에 적을 것" if set(rul) - {"ok"} else ""))
     print(f"validation 전/후: {first['full']['before']}/{first['full']['n']} -> {best_after if best_after is not None else first['full']['before']}/{first['full']['n']}")
     print(f"비용: LLM 호출 {sum(r['llm_calls'] for r in rows)}회, {sum(r['seconds'] or 0 for r in rows)/60:.1f}분")
+    tok_rows = [r["tokens"] for r in rows if r.get("tokens")]
+    if tok_rows:
+        tin, tout = sum(t["in"] for t in tok_rows), sum(t["out"] for t in tok_rows)
+        price_in, price_out = float(os.environ.get("PRICE_IN", 0.10)), float(os.environ.get("PRICE_OUT", 0.40))
+        cost = tin / 1e6 * price_in + tout / 1e6 * price_out
+        print(f"비용(토큰): in {tin} / out {tout}, 추정 ${cost:.4f} (PRICE_IN={price_in}, PRICE_OUT={price_out} $/1M)")
     print("accept", sum(r["accepted"] for r in rows), "/ 거부 사유:", dict(Counter(r["rejected_by"] for r in rows if r["rejected_by"])))
     print("진단 목록:"); [print(" -", r["diagnosis"]) for r in rows]
     print("test 전/후, 실패 유형, 전제 조건, 서비스에 넣는다면 은 사람이 적습니다.")

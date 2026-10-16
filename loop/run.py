@@ -158,8 +158,11 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
             dump_patch(s["rnd"], s["pt"], dump)
         return {"halt": True}
 
+    usage = ROOT / "logs" / "_usage.jsonl"   # providers가 실제 API 호출마다 token 수를 한 줄씩 남긴다 (캐시 응답은 안 남김)
+    os.environ["LLM_USAGE_LOG"] = str(usage)
+
     def begin(s: RoundState) -> dict:
-        t0 = time.time(); LAST_AGENT_WARN.clear()
+        t0 = time.time(); LAST_AGENT_WARN.clear(); usage.write_text("")
         if K.anchors_sha() != anchors0:
             print(f"[round {s['rnd']}] fixed files changed during the run (anchors {anchors0} -> {K.anchors_sha()}); stopping"); sys.exit(2)
         parent = select_parent(archive)
@@ -281,6 +284,8 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
         ctx, e = s["ctx"], s["entry"]
         after_eval(ctx)
         e["improver_calls"] = ctx.llm_calls; e["llm_calls"] = s["calls"] + ctx.llm_calls; e["seconds"] = round(time.time() - s["t0"], 1)
+        rows = [json.loads(l) for l in usage.read_text().splitlines() if l.strip()] if usage.exists() else []
+        e["tokens"] = {"in": sum(r["in"] for r in rows), "out": sum(r["out"] for r in rows)}
         with open(log_path, "a") as f:
             f.write(json.dumps(e, ensure_ascii=False) + "\n")
         print(f"[round {s['rnd']}] parent={s['parent']} block={e['block']} commit={e['commit']} full {e['full']['before']}->{e['full']['after']} "

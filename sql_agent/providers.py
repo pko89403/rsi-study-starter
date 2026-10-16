@@ -80,7 +80,18 @@ def _adapt(q: dict, tried: set, e, model: str) -> bool:
     return True
 
 
-_db, _lock = None, threading.Lock()
+_db, _lock, _usage_lock = None, threading.Lock(), threading.Lock()
+
+
+def _log_usage(ep: Endpoint, usage) -> None:
+    """LLM_USAGE_LOG가 켜져 있으면 실제 호출(캐시 히트 제외) 토큰 수를 한 줄 append.
+    usage가 없으면(일부 서버) 조용히 무시. 짧은 줄 append는 프로세스 간에도 충돌 없음."""
+    path = os.environ.get("LLM_USAGE_LOG")
+    if not path or usage is None:
+        return
+    line = json.dumps({"model": ep.model, "in": usage.prompt_tokens, "out": usage.completion_tokens})
+    with _usage_lock, open(path, "a") as f:
+        f.write(line + "\n")
 
 
 def _cache():
@@ -122,6 +133,7 @@ def _call(ep: Endpoint, messages: list[dict], *, temperature: float, max_tokens:
             kw["temperature"] = temperature
         try:
             r = client.chat.completions.create(model=ep.model, messages=messages, extra_body=ep.extra_body, **kw)
+            _log_usage(ep, r.usage)
             return r.choices[0].message.content or ""
         except (APIStatusError, APIConnectionError, APITimeoutError) as e:
             status = getattr(e, "status_code", None)
@@ -151,3 +163,13 @@ if __name__ == "__main__":  # python -m sql_agent.providers : 캐시 확인 (서
     ep2 = Endpoint("openai", "http://x/v1", "m", "k", {"provider": {"order": ["a"]}})
     assert complete(ep2, msg, temperature=0, max_tokens=8) == "out7"                                           # extra_body 다르면 다른 키(새 호출)
     print("cache ok")
+
+    class _U:  # 가짜 usage
+        prompt_tokens, completion_tokens = 10, 20
+    usage_log = os.path.join(tempfile.mkdtemp(), "u.jsonl")
+    os.environ["LLM_USAGE_LOG"] = usage_log
+    _log_usage(ep, _U())
+    _log_usage(ep, None)  # usage 없으면 조용히 무시
+    lines = open(usage_log).read().splitlines()
+    assert len(lines) == 1 and json.loads(lines[0]) == {"model": "m", "in": 10, "out": 20}
+    print("usage log ok")
