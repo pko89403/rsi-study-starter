@@ -60,7 +60,7 @@ make results W=1             # 그 주의 결과 표
 
 ## 2. 폴더
 
-![구성도: Improver agent(loop + hooks + Improver LLM)가 SQL agent의 EVOLVE-BLOCK을 고치고, evaluator가 validation으로 채점한다. test는 loop 밖](docs/structure.png)
+![구성도: Improver agent와 SQL agent의 경계. 경계를 넘는 것은 실행 요청과 patch(EVOLVE-BLOCK 교체)뿐이고, 결과는 evaluator를 거쳐 돌아온다. test는 loop 밖](docs/structure.png)
 
 | 경로 | 하는 일 | 누가 고치나 |
 |---|---|---|
