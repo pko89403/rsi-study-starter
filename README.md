@@ -48,6 +48,7 @@ LLM_CONCURRENCY=8            # 병렬 호출 수
 **실행**
 
 ```bash
+make check                   # 설치 확인 (LLM 호출 없음, 약 10초): self-check + 임시 worktree에서 mock 2 round
 make test                    # v0 test score (200문제 × 3회 평균)
 make round                   # 20 round. N=1 이면 1 round. logs/rounds.jsonl 에 round당 한 줄
 make results W=1             # 그 주의 결과 표
@@ -56,7 +57,7 @@ make meta-eval               # 내 archive에서 기존 vs 수정안 짝 비교 
 make meta-adopt              # 수정안 채택 (본인이 정한다)
 ```
 
-- v0 기준값 (gpt-4.1-nano, `ruler-v7` 데이터): validation 66/100, test 약 131/200 (3회 132·132·131). 두 split의 v0 정답 비율이 같게 뽑았다.
+- v0 기준값 (gpt-4.1-nano, `ruler-v8` 데이터): validation 67/100, test 약 138/200 (3회 138·139·138). 두 split의 v0 정답 비율이 같게 뽑았다.
 - 시간 (병렬 8): `make test` 약 1분 반, 1 round 약 30초, 20 round 약 10분. `make meta-eval` 10~15분.
 - `make` 없이 돌리려면 `uv run`을 붙인다. 예: `uv run python -m scripts.test_eval --runs 3`. venv activate는 필요 없다.
 - LLM 없이 loop 동작만 보려면 `LLM_BACKEND=mock`을 붙인다. 점수는 의미 없다.
@@ -93,7 +94,7 @@ make meta-adopt              # 수정안 채택 (본인이 정한다)
 | `examples/` | 논문 메소드를 hook으로 구현해 실제로 돌려 본 예시(3·6·7·8주차)와 실측 결과 | 참고용 (복사해서 씀) |
 | `scripts/split_spec.yaml` | 평가 데이터 구성 명세. 3~8주차 담당자가 자기 method에 필요한 문제 유형을 적는다 ([wiki 데이터 구성](https://github.com/pko89403/rsi-study-starter/wiki/데이터-구성)) | 주차 담당자 (PR) |
 | `scripts/make_catalog.py`, `make_splits.py` | Spider 후보에 v0를 돌려 유형을 붙이고, 명세대로 `data/`를 만든다 (validation·test 같은 비율) | 운영자 |
-| `scripts/gold_excluded.json` | 운영자가 검토한 gold 오류 70개와 사유. 데이터에 넣지 않는다 | 운영자 |
+| `scripts/gold_excluded.json` | 운영자가 검토한 gold 오류 77개와 사유. 데이터에 넣지 않는다 | 운영자 |
 
 ### 2-1. SQL agent의 모양
 
