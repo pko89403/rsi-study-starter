@@ -1,8 +1,27 @@
-"""Improver LLM에 무엇을 줄지. 기본: 규칙 + 블록 계약 + few-shot pool 예시 + 현재 블록 + 진단 + 틀린 문제 10개 + 지난 log 5줄."""
+"""Improver LLM에 무엇을 줄지. 기본: 규칙 + 대상 블록 계약 + few-shot pool 예시 + 대상 블록 + 진단 + 틀린 문제 + 지난 log 5줄.
+
+KNOBS: 이 hook에서 Improver가 조절해도 되는 손잡이 (이름: (타입, 범위, 기본값)). 값은 ctx.improver로 들어온다.
+참가자가 method를 넣을 때 그 method의 손잡이를 여기에 더하면, Improver가 make meta-propose로 값을 다듬는다.
+"""
 from __future__ import annotations
-import json
+import json, random
 from pathlib import Path
 from loop.context import RoundContext
+
+KNOBS = {
+    "n_wrong": ("int", 3, 20, 10),       # 보여 줄 틀린 문제 수
+    "show_pool": ("int", 0, 20, 12),     # 보여 줄 few-shot pool 후보 수
+    "guidance": ("str", 400, ""),        # patch 작성 지침 한두 문장
+}
+KNOB_DOCS = {   # Improver LLM이 읽는 손잡이 설명
+    "n_wrong": "how many wrong validation examples (question, predicted SQL, error) the patch prompt shows",
+    "show_pool": "how many few-shot pool candidates (id, db, question) the patch prompt lists for choosing FEWSHOT_IDS",
+    "guidance": "an instruction sentence added to the patch prompt telling the patch writer how to write patches",
+}
+
+
+def knob(ctx: RoundContext, name: str):
+    return (ctx.improver or {}).get(name, KNOBS[name][-1])
 
 CONTRACTS = {
     "prompt": """Block 'prompt' (sql_agent/run.py). How it is used by code outside the block, which you cannot change:
@@ -10,7 +29,7 @@ CONTRACTS = {
   build_messages(question, schema, fewshot) as `fewshot`: a list of dicts with keys "question", "schema", "sql".
   You do NOT need to read any file. Never use open(), os, subprocess, or imports inside the block.
 - build_messages must return a list of chat messages (dicts with "role" and "content").
-- The model answering is small (7B); keep the prompt short and concrete.""",
+- The model answering is small; keep the prompt short and concrete.""",
     "code": """Block 'code' (sql_agent/run.py): the bodies of the SQL agent's graph nodes. The wiring is FIXED outside the block:
   START -> select_schema -> generate -> execute -> route -> ("fix" -> execute again | END)
 - Keep these top-level names: MAX_ATTEMPTS (int), select_schema(s), generate(s), fix(s), route(s).
@@ -25,7 +44,9 @@ CONTRACTS = {
 }
 
 
-def _pool_samples(ctx: RoundContext, n: int = 12) -> str:
+def _pool_samples(ctx: RoundContext, n: int) -> str:
+    if n == 0:
+        return "few-shot pool: (not shown)"
     pool = json.loads(Path(ctx.config["fewshot_pool"]).read_text())
     rows = []
     for ex in pool[:n]:
@@ -34,13 +55,16 @@ def _pool_samples(ctx: RoundContext, n: int = 12) -> str:
 
 
 def build_prompt(ctx: RoundContext) -> list[dict]:
-    wrong = [p for p in ctx.before["per_problem"] if not p["correct"]][:10]
+    wrong = [p for p in ctx.before["per_problem"] if not p["correct"]]
+    random.Random(ctx.seed).shuffle(wrong)   # round마다 다른 오답 표본 (같은 입력 → 같은 patch 반복을 막는다)
+    wrong = wrong[: knob(ctx, "n_wrong")]
     wrong_txt = "\n".join(f"- {ctx.problem(p['id'])['question']}\n  predicted: {ctx.prediction(p['id'])}\n  error: {p['error']}" for p in wrong)
-    log_txt = "\n".join(json.dumps({k: r.get(k) for k in ("round", "reason", "accepted", "rejected_by")}) for r in ctx.recent_log)
-    blocks = ctx.blocks or {ctx.block_name: ctx.block}
-    contracts = "\n\n".join(CONTRACTS.get(b, f"Block '{b}'") for b in blocks)
-    blocks_txt = "\n\n".join(f"Editable block '{b}':\n<<<CURRENT_BLOCK {b}>>>\n{src}\n<<<END_BLOCK>>>" for b, src in blocks.items())
+    log_txt = "\n".join(json.dumps({k: r.get(k) for k in ("round", "block", "reason", "accepted", "rejected_by", "net")}) for r in ctx.recent_log)
+    b = ctx.block_name
+    guidance = knob(ctx, "guidance")
     user = (f"Validation score: {ctx.before['correct']}/{ctx.before['n']}\nDiagnosis: {ctx.diagnosis}\n\n"
-            f"Open blocks: {', '.join(blocks)}. This round, patch block '{ctx.block_name}' (BLOCK: {ctx.block_name}).\n\n{contracts}\n\n{_pool_samples(ctx)}\n\n"
-            f"Wrong examples:\n{wrong_txt}\n\nRecent rounds:\n{log_txt or '(none)'}\n\n{blocks_txt}")
+            f"This round, patch block '{b}' (BLOCK: {b}).\n\n{CONTRACTS.get(b, f'Block {b!r}')}\n\n"
+            + (f"Guidance: {guidance}\n\n" if guidance else "")
+            + f"{_pool_samples(ctx, knob(ctx, 'show_pool'))}\n\nWrong examples:\n{wrong_txt}\n\nRecent rounds:\n{log_txt or '(none)'}\n\n"
+            f"Current block '{b}':\n<<<CURRENT_BLOCK {b}>>>\n{ctx.block}\n<<<END_BLOCK>>>")
     return [{"role": "system", "content": ctx.prompt_text("patch.md")}, {"role": "user", "content": user}]

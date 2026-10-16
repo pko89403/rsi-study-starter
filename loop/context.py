@@ -12,9 +12,9 @@ class RoundContext:
     config: dict
     parent: str
     block_name: str
-    block: str                        # editable_blocks[0]의 현재 내용
+    block: str                        # 이번 round 대상 블록(block_name)의 현재 내용
     before: dict                      # evaluate() 결과
-    problems: dict                    # id -> problem (gold 포함, loop만 봄)
+    problems: dict                    # id -> problem (gold_sql 없음. 채점은 kernel만 한다)
     predictions: dict                 # id -> sql (before 실행)
     blocks: dict | None = None        # 열린 블록 전부 {이름: 내용}
     diagnosis: str = ""
@@ -25,6 +25,8 @@ class RoundContext:
     after: dict | None = None
     patch: object = None
     accepted: bool | None = None
+    improver: dict = field(default_factory=dict)   # IMPROVER 손잡이 값 (hook이 KNOBS로 선언, kernel이 검사한 값)
+    seed: int = 0                                  # 오답 표본 순서 등 입력을 섞는 seed (loop: round 번호)
 
     def problem(self, pid: str) -> dict:
         return self.problems[pid]

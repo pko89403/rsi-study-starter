@@ -157,14 +157,15 @@ def main() -> None:
     fewshot = []
     for fid in FEWSHOT_IDS:
         if fid in pool:
-            ex = {"question": pool[fid]["question"], "sql": pool[fid]["gold_sql"], "schema": schema_text(tables, pool[fid]["db_id"])}
+            ex = {"question": pool[fid]["question"], "sql": pool[fid]["gold_sql"], "schema": schema_text(tables, pool[fid]["db_id"]), "db_id": pool[fid]["db_id"]}
             fewshot.append(ex)
     problems = json.loads(Path(a.problems).read_text())
     graph = GRAPH
 
     def solve(p: dict) -> dict:
         try:
-            return {"id": p["id"], "sql": answer(graph, p["question"], schema_text(tables, p["db_id"]), p["db_id"], fewshot)}
+            fs = [ex for ex in fewshot if ex["db_id"] != p["db_id"]]   # 같은 DB 예시 제외 (validation과 pool이 같은 DB를 써서, 같은 DB 예시는 test로 이어지지 않는다)
+            return {"id": p["id"], "sql": answer(graph, p["question"], schema_text(tables, p["db_id"]), p["db_id"], fs)}
         except Exception as e:  # 한 문제 실패가 전체를 멈추지 않게. 빈 sql은 틀린 것으로 채점됨.
             print(f"[sql_agent] {p['id']} failed: {type(e).__name__}: {e}", flush=True)
             return {"id": p["id"], "sql": ""}

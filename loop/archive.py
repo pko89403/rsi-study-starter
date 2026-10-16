@@ -36,8 +36,20 @@ class Archive:
             self.state["parents"][sha] = parent
         self._save()
 
-    def set_best(self, sha: str) -> None:
+    def set_best(self, sha: str) -> bool:
+        """champion은 내려가지 않는다: 현재 best보다 점수가 엄격히 높을 때만 바꾼다."""
+        cur = self.score_of(self.best) if self.best else None
+        new = self.score_of(sha)
+        if self.best is not None and (new is None or cur is None or new <= cur):
+            return False
         self.state["best"] = sha; self._save()
+        return True
+
+    def seen(self, h: str) -> bool:
+        return h in self.state.get("seen", [])
+
+    def add_seen(self, h: str) -> None:
+        self.state.setdefault("seen", []).append(h); self._save()
 
     @property
     def best(self) -> str | None:
