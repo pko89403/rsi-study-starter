@@ -12,26 +12,26 @@ n_test: 200
 n_pool: 300
 weeks:
   3:
-    owner: ""
-    method: ""     # 예: Reflexion. 틀린 답을 돌아보는 메모 → 어떤 유형이든 '틀린 문제'가 많아야 한다
-    want: {v0: {row_mismatch: 20}}
+    owner: Sonnet 3주차 담당
+    method: 'Self-Refine: 비평 기준(조건·논리 체크리스트)을 명시하고 patch 자기 비평→재작성'
+    want: {tags: {multi_cond: 10}, v0: {row_mismatch: 15}}
   4:
-    owner: ""
-    method: ""     # 예: 실행 오류 되먹임(§3.2) → 실행 오류·빈 결과가 있어야 고칠 것이 있다
-    want: {v0: {exec_error: 10, empty: 8}}
+    owner: Sonnet 4주차 담당
+    method: 'Reflexion: diagnose가 실행 오류를 뽑아 build_prompt가 ''이전 실패 원인''으로 되먹임'
+    want: {v0: {exec_error: 20}}
   5:
-    owner: ""
-    method: ""     # 예: 자기 생성 예시 / few-shot 선택(§4) → pool에 validation과 같은 골격이 다른 DB에 있어야 한다
-    want: {tags: {nested: 12, setop: 5, group: 20}}
+    owner: Sonnet 5주차 담당
+    method: 'STaR rationalization: 실행 오류 힌트로 SQL 재생성 (exec_error·missing_cols)'
+    want: {v0: {exec_error: 20, missing_cols: 5}}
   6:
-    owner: ""
-    method: ""     # 예: 자기 평가·심판(§5) → 결과가 "거의 맞는" 문제(열 과다·열 순서)가 있어야 심판이 갈린다
-    want: {v0: {extra_cols: 8, col_order: 4}}
+    owner: Sonnet 6주차 담당
+    method: 'LLM-as-a-Judge: review_patch judge에 오류 유형(행 불일치·열 순서·열 과다) 분류 rubric'
+    want: {v0: {col_order: 8, extra_cols: 5, row_mismatch: 10}}
   7:
-    owner: ""
-    method: ""     # 예: 진화 탐색(§6) → 난이도가 섞여 있어야 parent 선택이 의미 있다
-    want: {hardness: {hard: 15, extra: 12}}
+    owner: Sonnet 7주차 담당
+    method: 'AlphaEvolve: 평가 피드백(실행 오류)을 patch prompt에 직접 넣음'
+    want: {v0: {exec_error: 15}}
   8:
-    owner: ""
-    method: ""     # 예: 한계·안전(§7) → goal 변경이 점수를 깎는지 보려면 v0가 이미 맞는 문제도 충분해야 한다
-    want: {v0: {ok: 40}}
+    owner: Sonnet 8주차 담당
+    method: 'Unfireable safety kernel: review_patch 금지 행동 체크리스트 (데이터 유형과 무관)'
+    want: {}
