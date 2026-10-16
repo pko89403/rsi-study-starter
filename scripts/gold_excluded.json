@@ -1,0 +1,352 @@
+[
+ {
+  "id": "train_0277",
+  "db_id": "twitter_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_0993",
+  "db_id": "university_basketball",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "train_1006",
+  "db_id": "university_basketball",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_2363",
+  "db_id": "csu_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_3529",
+  "db_id": "music_1",
+  "reason": "질문에 없는 열이 있거나 요청한 열이 빠짐"
+ },
+ {
+  "id": "train_3530",
+  "db_id": "music_1",
+  "reason": "질문에 없는 열이 있거나 요청한 열이 빠짐"
+ },
+ {
+  "id": "train_3550",
+  "db_id": "music_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_3567",
+  "db_id": "music_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_3570",
+  "db_id": "music_1",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "train_3587",
+  "db_id": "music_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_3588",
+  "db_id": "music_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_3604",
+  "db_id": "music_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_3862",
+  "db_id": "insurance_policies",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_3863",
+  "db_id": "insurance_policies",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_3869",
+  "db_id": "insurance_policies",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "train_3894",
+  "db_id": "insurance_policies",
+  "reason": "질문에 없는 열이 있거나 요청한 열이 빠짐"
+ },
+ {
+  "id": "train_3895",
+  "db_id": "insurance_policies",
+  "reason": "질문에 없는 열이 있거나 요청한 열이 빠짐"
+ },
+ {
+  "id": "train_4037",
+  "db_id": "student_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "train_4504",
+  "db_id": "document_management",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_4516",
+  "db_id": "document_management",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_4521",
+  "db_id": "document_management",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_4522",
+  "db_id": "document_management",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_4912",
+  "db_id": "store_product",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_4925",
+  "db_id": "store_product",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_4938",
+  "db_id": "store_product",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_4939",
+  "db_id": "store_product",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_5379",
+  "db_id": "tracking_software_problems",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "train_5384",
+  "db_id": "tracking_software_problems",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_5385",
+  "db_id": "tracking_software_problems",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_5475",
+  "db_id": "voter_2",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_5707",
+  "db_id": "dorm_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_5734",
+  "db_id": "dorm_1",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "train_5739",
+  "db_id": "dorm_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_5756",
+  "db_id": "dorm_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_5757",
+  "db_id": "dorm_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_5765",
+  "db_id": "dorm_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "train_6231",
+  "db_id": "ship_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0016",
+  "db_id": "concert_singer",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "dev_0241",
+  "db_id": "flight_2",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0242",
+  "db_id": "flight_2",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0417",
+  "db_id": "museum_visit",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0452",
+  "db_id": "wta_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0459",
+  "db_id": "wta_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0460",
+  "db_id": "wta_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0469",
+  "db_id": "wta_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0470",
+  "db_id": "wta_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0471",
+  "db_id": "wta_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0472",
+  "db_id": "wta_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0742",
+  "db_id": "world_1",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "dev_0743",
+  "db_id": "world_1",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "dev_0772",
+  "db_id": "world_1",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "dev_0773",
+  "db_id": "world_1",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "dev_0777",
+  "db_id": "world_1",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "dev_0788",
+  "db_id": "world_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0792",
+  "db_id": "world_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0796",
+  "db_id": "world_1",
+  "reason": "열 순서가 질문과 다름 (rules_v0는 순서까지 비교)"
+ },
+ {
+  "id": "dev_0810",
+  "db_id": "world_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0811",
+  "db_id": "world_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0816",
+  "db_id": "world_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0817",
+  "db_id": "world_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0818",
+  "db_id": "world_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0819",
+  "db_id": "world_1",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0820",
+  "db_id": "world_1",
+  "reason": "질문에 없는 열이 있거나 요청한 열이 빠짐"
+ },
+ {
+  "id": "dev_0821",
+  "db_id": "world_1",
+  "reason": "질문에 없는 열이 있거나 요청한 열이 빠짐"
+ },
+ {
+  "id": "dev_0937",
+  "db_id": "dog_kennels",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0942",
+  "db_id": "dog_kennels",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "dev_0943",
+  "db_id": "dog_kennels",
+  "reason": "질문이 모호하고 gold가 덜 자연스러운 해석"
+ },
+ {
+  "id": "dev_0945",
+  "db_id": "dog_kennels",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0960",
+  "db_id": "dog_kennels",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ },
+ {
+  "id": "dev_0961",
+  "db_id": "dog_kennels",
+  "reason": "gold 논리가 질문과 다름 (조건·집계·조인)"
+ }
+]
