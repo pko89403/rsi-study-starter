@@ -10,6 +10,9 @@ round:
 results:
 	uv run python -m scripts.results --week $(W)
 
+ruler:   # 운영자만: 지금 commit을 고정 파일의 기준으로 (tag를 origin에 push)
+	git tag -f ruler-v1 && git push -f origin ruler-v1
+
 meta-propose:
 	uv run python -m loop.meta propose
 

@@ -11,7 +11,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 FIXED_FILES = ["data/validation.json", "data/test.json", "data/fewshot_pool.json", "data/tables.json",
                "scripts/test_eval.py", "evaluator/evaluate.py", "evaluator/rules_v0.py",
-               "loop/run.py", "loop/patch.py", "loop/archive.py", "loop/kernel.py", "loop/meta.py", "loop/context.py", "loop/env.py"]
+               "loop/run.py", "loop/patch.py", "loop/archive.py", "loop/kernel.py", "loop/meta.py", "loop/context.py", "loop/env.py",
+               ".claude/settings.json", "AGENTS.md"]
+RULER_TAG = "ruler-v1"   # 운영자가 고정 파일의 기준 commit에 단 tag. origin에 push 권한이 없는 참가자는 못 바꾼다
 IMPROVER_FILE = "improver/incumbent.py"
 WIDE_MARGIN = 4   # 많은 답이 바뀐 patch(프롬프트 수정 등)의 최소 순증. placebo 보정 전 기본값
 
@@ -22,6 +24,25 @@ def anchors_sha(root: Path = ROOT) -> str:
         p = root / f
         h.update(f.encode()); h.update(p.read_bytes() if p.exists() else b"<missing>")
     return h.hexdigest()[:12]
+
+
+def check_ruler(root: Path = ROOT) -> str | None:
+    """고정 파일이 origin의 RULER_TAG와 같은지 확인한다. 다르면 사유 문자열. tag가 없으면 None(검사 생략, 경고만).
+    일부러 바꾼 경우(README §6의 B)는 RULER_OVERRIDE=1 로 실행하고, 그 사실이 log와 test 결과에 남는다."""
+    import os, subprocess
+    r = subprocess.run(["git", "rev-parse", "-q", "--verify", f"refs/tags/{RULER_TAG}"], cwd=root, capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"[ruler] tag {RULER_TAG} 없음: 고정 파일 검사를 건너뜀 (git fetch --tags 로 받을 수 있다)")
+        return None
+    d = subprocess.run(["git", "diff", "--name-only", RULER_TAG, "--", *FIXED_FILES], cwd=root, capture_output=True, text=True)
+    changed = [l for l in d.stdout.splitlines() if l.strip()]
+    if not changed:
+        return None
+    msg = f"고정 파일이 {RULER_TAG}와 다름: {', '.join(changed)}"
+    if os.environ.get("RULER_OVERRIDE") == "1":
+        print(f"[ruler] {msg} (RULER_OVERRIDE=1, 결과에 ruler_override=true 로 기록)")
+        return None
+    return msg
 
 
 def kernel_accept(before: dict, after: dict, before_preds: dict, after_preds: dict, db_of: dict) -> tuple[bool, dict]:
@@ -174,4 +195,18 @@ if __name__ == "__main__":  # python -m loop.kernel : 판정·손잡이 확인 (
     assert describe(("str", 300, "")) == "free text of at most 300 characters (default '')"
     assert describe(("int", 3, 20, 10)) == "integer from 3 to 20 (default 10)"
     assert len(anchors_sha()) == 12
+    import os, subprocess
+    d = Path(tempfile.mkdtemp()); (d / "loop").mkdir(); (d / "data").mkdir()
+    for f in FIXED_FILES:
+        (d / f).parent.mkdir(parents=True, exist_ok=True); (d / f).write_text("x")
+    g = lambda *a: subprocess.run(["git", *a], cwd=d, capture_output=True, text=True, check=True)
+    g("init", "-q"); g("add", "-A"); g("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "v0")
+    assert check_ruler(d) is None                               # tag 없음 → 건너뜀
+    g("tag", RULER_TAG)
+    assert check_ruler(d) is None                               # 같음
+    (d / "loop/run.py").write_text("y")
+    assert "loop/run.py" in (check_ruler(d) or "")              # 다름 → 거부 사유
+    os.environ["RULER_OVERRIDE"] = "1"
+    assert check_ruler(d) is None                               # override → 통과 (기록됨)
+    del os.environ["RULER_OVERRIDE"]
     print("kernel ok")

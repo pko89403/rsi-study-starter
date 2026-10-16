@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 from evaluator.evaluate import evaluate
 from loop.env import require_llm
+from loop import kernel as K
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -13,6 +14,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(); ap.add_argument("--runs", type=int, default=3); ap.add_argument("--config", default="config.yaml")
     a = ap.parse_args(); os.chdir(ROOT); Path("logs").mkdir(exist_ok=True)
     require_llm()
+    why = K.check_ruler()
+    if why:
+        sys.exit(f"{why}\n고정 파일을 되돌리거나(git checkout {K.RULER_TAG} -- <파일>), 일부러 바꾼 것이면 RULER_OVERRIDE=1 로 실행한다.")
     cfg = yaml.safe_load(Path("config.yaml").read_text())
     problems = json.loads(Path("data/test.json").read_text())
     scores = []
@@ -29,7 +33,8 @@ def main() -> None:
         if i >= 1 and sorted(Path(out).read_text().splitlines()) == sorted(Path(f"logs/_test_pred_{i-1}.jsonl").read_text().splitlines()):
             print(f"run {i+1}: 예측이 run {i}와 완전히 같음 → 남은 run은 같은 점수로 채우고 건너뜀")
             scores += [res["correct"]] * (a.runs - len(scores)); break
-    print(json.dumps({"test_n": len(problems), "runs": scores, "mean": sum(scores) / len(scores)}))
+    print(json.dumps({"test_n": len(problems), "runs": scores, "mean": sum(scores) / len(scores), "anchors_sha": K.anchors_sha(),
+                      "ruler_override": os.environ.get("RULER_OVERRIDE") == "1", "model": os.environ.get("LLM_MODEL")}))
 
 
 if __name__ == "__main__":

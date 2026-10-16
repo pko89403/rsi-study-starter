@@ -203,7 +203,7 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
                  "screen": None, "full": {"n": before["n"], "before": before["correct"], "after": None},
                  "accepted": False, "rejected_by": None, "llm_calls": calls, "seconds": None,
                  "lever": ctx.block_name, "improver_sha": K.improver_sha(ctx.improver), "resamples": resamples,
-                 "anchors_sha": anchors0, **models}
+                 "anchors_sha": anchors0, "ruler_override": os.environ.get("RULER_OVERRIDE") == "1", **models}
         if pt is None:
             entry["rejected_by"] = "error" if all(r.startswith("no parsable") for r in reasons) else "guard"
             entry["reason"] = "rejected before evaluation: " + " / ".join(reasons)[:400]
@@ -323,6 +323,9 @@ def setup(config: str = "config.yaml") -> tuple[dict, Archive]:
     cfg = yaml.safe_load(Path(config).read_text())
     Path(cfg["log"]).parent.mkdir(exist_ok=True)
     os.environ.setdefault("LLM_CACHE", str(ROOT / "logs" / "llm_cache.sqlite"))   # temperature 0 응답 캐시. LLM_CACHE= 로 끈다. test_eval은 안 씀
+    why = K.check_ruler()
+    if why:
+        sys.exit(f"{why}\n고정 파일을 되돌리거나(git checkout {K.RULER_TAG} -- <파일>), 일부러 바꾼 것이면 RULER_OVERRIDE=1 로 실행한다.")
     archive = Archive(ROOT)
     if not archive.repo.head.is_valid():
         archive.commit("v0", cfg["evolve_files"])
