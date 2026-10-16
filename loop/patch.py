@@ -32,9 +32,10 @@ def parse_patch(text: str) -> Patch | None:
     ...블록 내용...
     CONTENT>>>
     """
-    m = re.search(r"BLOCK:\s*(\S+).*?REASON:\s*(.*?)\n.*?<<<CONTENT\n(.*?)\nCONTENT>>>", text, re.S)
+    # 닫는 줄은 모델마다 다르게 쓴다: CONTENT>>>, >>>, <<<CONTENT>>>, <<<END_CONTENT>>> ... → <<<·대문자·_·>>> 만으로 된 줄이면 닫는 줄. 없으면(잘림) 거부
+    m = re.search(r"BLOCK:\s*(\S+).*?REASON:\s*(.*?)\n.*?<<<CONTENT[ \t]*\n(.*?)\n[ \t]*(?:<<<)?[A-Z_]*>>>[ \t]*(?:\n|$)", text, re.S)
     if m:
-        return Patch(block=m.group(1).strip(), content=clean_content(m.group(3)), reason=m.group(2).strip()[:200])
+        return Patch(block=m.group(1).strip().strip("'\"`"), content=clean_content(m.group(3)), reason=m.group(2).strip()[:200])
     m = re.search(r"\{.*\}", text, re.S)
     if not m:
         return None
@@ -95,3 +96,14 @@ def outside_changed(before: str, after: str, name: str) -> bool:
 def compiles(module: str) -> str | None:
     r = subprocess.run([sys.executable, "-c", f"import {module}"], capture_output=True, text=True, timeout=60)
     return None if r.returncode == 0 else (r.stderr.strip().splitlines() or ["import failed"])[-1]
+
+
+if __name__ == "__main__":  # python -m loop.patch : parse_patch 확인
+    body = "BLOCK: prompt\nREASON: r\n<<<CONTENT\nX = 1\nY = 2\n{}\n"
+    for closer in ("CONTENT>>>", ">>>", "<<<CONTENT>>>", "<<<END_BLOCK>>>", "<<<END_CONTENT>>>", "  CONTENT>>>  "):
+        p = parse_patch(body.format(closer))
+        assert p and p.block == "prompt" and p.content == "X = 1\nY = 2", closer
+    assert parse_patch("BLOCK: prompt\nREASON: r\n<<<CONTENT\nX = 1\n") is None          # 잘린 출력은 거부
+    assert parse_patch(body.format(">>>").replace("BLOCK: prompt", "BLOCK: 'prompt'")).block == "prompt"  # 따옴표 제거
+    assert parse_patch(body.format("CONTENT>>>") + "\nmore >>>\n").content == "X = 1\nY = 2"  # 첫 닫는 줄에서 끊음
+    print("parse_patch ok")

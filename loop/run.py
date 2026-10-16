@@ -121,7 +121,8 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
         if archive.best is None:
             archive.set_best(parent)
         blocks = {b: P.read_block(P.locate(evolve_files, b), b) for b in cfg["editable_blocks"]}
-        block_name = cfg["editable_blocks"][0]
+        # 이번 round에 고칠 블록: 열린 블록을 round마다 돌아가며. on_round_start hook에서 ctx.block_name을 바꿔 다른 전략을 쓸 수 있다
+        block_name = cfg["editable_blocks"][(s["rnd"] - 1) % len(cfg["editable_blocks"])]
         ctx = RoundContext(round=s["rnd"], week=cfg["week"], config=cfg, parent=parent, block_name=block_name,
                            block=blocks[block_name], blocks=blocks, before=before,
                            problems={p["id"]: p for p in problems}, predictions=preds, llm=llm.chat,
@@ -257,6 +258,7 @@ def main() -> None:
     cfg = yaml.safe_load(Path(a.config).read_text())
     rounds = a.rounds or cfg["rounds"]
     log_path = Path(cfg["log"]); log_path.parent.mkdir(exist_ok=True)
+    os.environ.setdefault("LLM_CACHE", str(ROOT / "logs" / "llm_cache.sqlite"))   # temperature 0 응답 캐시. LLM_CACHE= 로 끈다. test_eval은 안 씀
     archive = Archive(ROOT)
     if not archive.repo.head.is_valid():
         archive.commit("v0", cfg["evolve_files"])

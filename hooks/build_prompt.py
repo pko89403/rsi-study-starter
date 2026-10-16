@@ -41,6 +41,6 @@ def build_prompt(ctx: RoundContext) -> list[dict]:
     contracts = "\n\n".join(CONTRACTS.get(b, f"Block '{b}'") for b in blocks)
     blocks_txt = "\n\n".join(f"Editable block '{b}':\n<<<CURRENT_BLOCK {b}>>>\n{src}\n<<<END_BLOCK>>>" for b, src in blocks.items())
     user = (f"Validation score: {ctx.before['correct']}/{ctx.before['n']}\nDiagnosis: {ctx.diagnosis}\n\n"
-            f"Open blocks: {', '.join(blocks)}. Patch exactly one of them.\n\n{contracts}\n\n{_pool_samples(ctx)}\n\n"
+            f"Open blocks: {', '.join(blocks)}. This round, patch block '{ctx.block_name}' (BLOCK: {ctx.block_name}).\n\n{contracts}\n\n{_pool_samples(ctx)}\n\n"
             f"Wrong examples:\n{wrong_txt}\n\nRecent rounds:\n{log_txt or '(none)'}\n\n{blocks_txt}")
     return [{"role": "system", "content": ctx.prompt_text("patch.md")}, {"role": "user", "content": user}]

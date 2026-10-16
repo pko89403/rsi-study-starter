@@ -246,6 +246,8 @@ method가 hook 하나에 들어가면 그 함수만 바꾼다. 안 들어가면 
 
 - **LM Studio**: 모델을 context 16384로 로드한다(`lms load <모델> -c 16384`).
   기본 context(8192)면 Improver LLM 프롬프트와 출력이 넘칠 수 있다. 자세한 것은 위키 [로컬 LM Studio](https://github.com/pko89403/rsi-study-starter/wiki/로컬-LM-Studio).
+- **LLM 응답 캐시**: `make round`는 temperature 0 응답을 `logs/llm_cache.sqlite`에 캐시한다(같은 commit 재평가, screen 문제 재풀이가 공짜).
+  같은 모델 id로 다른 모델 파일(양자화)을 로드했으면 이 파일을 지운다. 끄려면 `LLM_CACHE= make round`. `make test`는 캐시를 쓰지 않는다.
 - **agent timeout**: `config.yaml`의 `agent_timeout_sec`(기본 1800초). 100문제 × 모델 속도.
 - **round 하나가 몇 분씩 걸림**: Improver LLM이 같은 내용을 반복하다 `improver_max_tokens`까지 쓰는 경우다. 7B에서 가끔 생긴다.
   그 patch는 parse 실패로 거부된다. 상한을 올려도 결과는 같고 시간만 늘어난다.

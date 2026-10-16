@@ -26,6 +26,9 @@ def main() -> None:
             print("agent failed:", r.stderr.strip().splitlines()[-1:]); sys.exit(1)
         res = evaluate(out, "data/test.json", cfg["db_dir"], cfg["sql_timeout_sec"])
         scores.append(res["correct"]); print(f"run {i+1}: {res['correct']}/{res['n']}")
+        if i >= 1 and sorted(Path(out).read_text().splitlines()) == sorted(Path(f"logs/_test_pred_{i-1}.jsonl").read_text().splitlines()):
+            print(f"run {i+1}: 예측이 run {i}와 완전히 같음 → 남은 run은 같은 점수로 채우고 건너뜀")
+            scores += [res["correct"]] * (a.runs - len(scores)); break
     print(json.dumps({"test_n": len(problems), "runs": scores, "mean": sum(scores) / len(scores)}))
 
 
