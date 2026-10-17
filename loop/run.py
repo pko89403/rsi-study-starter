@@ -7,7 +7,7 @@
 판정은 전부 고정 채점 rules_v0. champion(best)은 내려가지 않는다. Improver 쪽 hook에는 정답 SQL을 넘기지 않는다.
 """
 from __future__ import annotations
-import argparse, copy, hashlib, json, os, subprocess, sys, tempfile, time
+import argparse, copy, fcntl, hashlib, json, os, subprocess, sys, tempfile, time
 from pathlib import Path
 from typing import TypedDict
 import yaml
@@ -31,6 +31,7 @@ from hooks.after_eval import after_eval
 from hooks.should_stop import should_stop
 
 ROOT = Path(__file__).resolve().parent.parent
+_LOCK = None
 LAST_AGENT_WARN: list[str] = []
 HOOKS = [select_parent, on_round_start, diagnose, build_prompt, propose, review_patch, after_screen, accept, after_eval, should_stop]
 MAX_REASK = 3   # 평가 전에 거부된 patch를 이유와 함께 다시 요청하는 횟수
@@ -109,8 +110,14 @@ def propose_valid(ctx: RoundContext, editable: list[str], archive: Archive) -> t
     """build_prompt → propose. 평가 전 거부되면 이유를 붙여 최대 MAX_REASK번 다시 묻는다.
     round당 평가하는 patch는 1개 (후보가 여럿이면 처음 통과한 것). 반환: (patch, 거부 이유들, 재요청 수, LLM 호출 수)."""
     msgs, reasons, n0 = build_prompt(ctx), [], ctx.llm_calls
+    if not (isinstance(msgs, list) and all(isinstance(m, dict) for m in msgs)):
+        raise TypeError(f"hooks/build_prompt.py: build_prompt must return list[dict] (chat messages), got {type(msgs).__name__}")
     for attempt in range(MAX_REASK + 1):
         patches = propose(ctx, msgs)
+        if isinstance(patches, P.Patch):
+            patches = [patches]
+        if patches is None or not isinstance(patches, list):
+            raise TypeError(f"hooks/propose.py: propose must return list[Patch], got {type(patches).__name__}")
         now = []
         for p in patches or [None]:
             pt, why = precheck(ctx, p, editable, archive)
@@ -165,7 +172,11 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
         t0 = time.time(); LAST_AGENT_WARN.clear(); usage.write_text("")
         if K.anchors_sha() != anchors0:
             print(f"[round {s['rnd']}] fixed files changed during the run (anchors {anchors0} -> {K.anchors_sha()}); stopping"); sys.exit(2)
-        parent = select_parent(archive)
+        ref = select_parent(archive)
+        try:
+            parent = archive.repo.commit(ref).hexsha[:7]   # 'HEAD'·branch 이름도 commit sha로 고정
+        except Exception:
+            sys.exit(f"hooks/select_parent.py: select_parent returned {ref!r}, not a commit in this repo")
         archive.checkout(parent, evolve_files)
         if parent not in cache:
             res, err, preds = eval_on(problems, cfg, "full")
@@ -226,7 +237,6 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
         why = P.guard(pt, editable)   # review_patch가 내용을 바꿨을 수 있으니 다시 검사
         if why:
             e["reason"] = pt.reason; return reject(s, "guard", why, dump=why)
-        archive.add_seen(patch_hash(pt))
         target = P.locate(evolve_files, pt.block)
         src_before = target.read_text()
         P.apply(target, pt.block, pt.content)
@@ -276,12 +286,16 @@ def build_graph(cfg: dict, archive: Archive, last_round: int):
         e["accepted"] = ok; ctx.accepted = ok
         if ok:
             e["champion"] = archive.set_best(sha)   # parent보다 나아도 현재 champion보다 높을 때만 champion
+            if e["champion"]:
+                archive.promote(sha, evolve_files)
         else:
             e["rejected_by"] = "accept"; archive.checkout(s["parent"], evolve_files)
         return {"calls": calls, "halt": True}
 
     def after_eval_node(s: RoundState) -> dict:
         ctx, e = s["ctx"], s["entry"]
+        if e.get("commit"):   # 평가까지 간 patch만 '이미 시도함'으로 남긴다 (중간에 끊긴 patch는 다시 시도할 수 있게)
+            archive.add_seen(patch_hash(s["pt"]))
         after_eval(ctx)
         e["improver_calls"] = ctx.llm_calls; e["llm_calls"] = s["calls"] + ctx.llm_calls; e["seconds"] = round(time.time() - s["t0"], 1)
         rows = [json.loads(l) for l in usage.read_text().splitlines() if l.strip()] if usage.exists() else []
@@ -355,6 +369,12 @@ def setup(config: str = "config.yaml") -> tuple[dict, Archive]:
     Path(cfg["log"]).parent.mkdir(exist_ok=True)
     os.environ.setdefault("LLM_CACHE", str(ROOT / "logs" / "llm_cache.sqlite"))   # temperature 0 응답 캐시. LLM_CACHE= 로 끈다. test_eval은 안 씀
     K.require_ruler()
+    global _LOCK
+    _LOCK = open(ROOT / "logs" / ".lock", "w")
+    try:
+        fcntl.flock(_LOCK, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.exit("다른 make round / make meta-* 가 이 폴더에서 실행 중입니다. 끝난 뒤 다시 실행하세요.")
     dsha = reset_if_data_changed(cfg)
     archive = Archive(ROOT)
     archive.state["data_sha"] = dsha
@@ -372,12 +392,19 @@ def main() -> None:
     log_path = Path(cfg["log"])
     last_round = 0
     if log_path.exists():
-        lines = [l for l in log_path.read_text().splitlines() if l.strip()]
-        if lines:
-            last_round = json.loads(lines[-1])["round"]
+        for l in reversed(log_path.read_text().splitlines()):   # 중단으로 잘린 마지막 줄은 건너뛴다
+            try:
+                last_round = json.loads(l)["round"]; break
+            except (json.JSONDecodeError, KeyError):
+                continue
+    if archive.repo.head.is_detached:
+        print("[setup] 경고: detached HEAD입니다 (옛 tag·commit을 checkout한 상태). champion이 branch에 남지 않습니다. 보통은 git checkout main 후 실행합니다.")
     graph = build_graph(cfg, archive, last_round + rounds)
-    graph.invoke({"rnd": last_round + 1}, {"recursion_limit": rounds * 20 + 10})
-    archive.checkout(archive.best, cfg["evolve_files"])   # 끝: champion으로 맞춰 둔다
+    try:
+        graph.invoke({"rnd": last_round + 1}, {"recursion_limit": rounds * 20 + 10})
+    finally:   # 정상 종료든 중단·오류든 작업 트리를 champion으로 맞춰 둔다 (make test가 champion을 재게)
+        if archive.best:
+            archive.checkout(archive.best, cfg["evolve_files"])
     print(f"champion: {archive.best} ({archive.score_of(archive.best)}/{len(json.loads(Path(cfg['validation']).read_text()))})")
 
 

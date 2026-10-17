@@ -2,25 +2,15 @@
   "permissions": {
     "deny": [
       "Edit(/loop/*.py)",
-      "Write(/loop/*.py)",
       "Edit(/evaluator/**)",
-      "Write(/evaluator/**)",
       "Edit(/scripts/test_eval.py)",
-      "Write(/scripts/test_eval.py)",
       "Edit(/data/**)",
-      "Write(/data/**)",
       "Edit(/sql_agent/run.py)",
-      "Write(/sql_agent/run.py)",
       "Edit(/improver/incumbent.py)",
-      "Write(/improver/incumbent.py)",
       "Edit(/.claude/settings.json)",
-      "Write(/.claude/settings.json)",
       "Edit(/AGENTS.md)",
-      "Write(/AGENTS.md)",
       "Edit(/CLAUDE.md)",
-      "Write(/CLAUDE.md)",
-      "Edit(/.gemini/settings.json)",
-      "Write(/.gemini/settings.json)"
+      "Edit(/.gemini/settings.json)"
     ]
   }
 }

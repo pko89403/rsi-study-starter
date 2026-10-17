@@ -56,6 +56,9 @@ def check_ruler(root: Path = ROOT, remote: bool = True) -> tuple[str, str]:
             local = _git(root, "rev-parse", "-q", "--verify", ref)
     if not local:
         return "skipped", f"tag {RULER_TAG} 없음 (git fetch --force --tags origin)"
+    newer = [t for t in (_git(root, "tag", "-l", "ruler-v*") or "").split() if t[7:].isdigit() and int(t[7:]) > int(RULER_TAG[7:])]
+    if newer:   # 이 코드보다 새 기준이 있다: 옛 버전을 쓰고 있거나 git pull을 안 했다
+        print(f"[ruler] 경고: 더 새 기준 {max(newer, key=lambda t: int(t[7:]))}이 있습니다. git pull로 최신 코드를 받으세요.")
     d = _git(root, "diff", "--name-only", RULER_TAG, "--", *FIXED_FILES, *FIXED_DIRS)
     changed = [l for l in (d or "").splitlines() if l.strip()]
     if not changed:
@@ -107,13 +110,22 @@ def strip_gold(problems: list[dict]) -> dict:
 # ---- KNOBS: hook이 선언, Improver가 값을 고른다 ----
 # 형식: ("int", lo, hi, default) | ("float", lo, hi, default) | ("enum", [choices], default) | ("str", max_len, default) | ("bool", default)
 
+_LEN = {"int": 4, "float": 4, "enum": 3, "str": 3, "bool": 2}
+
+
 def collect_knobs(modules) -> dict:
-    schema: dict = {}
+    schema, owner = {}, {}
     for m in modules:
         for name, spec in (getattr(m, "KNOBS", None) or {}).items():
+            spec = tuple(spec) if isinstance(spec, (tuple, list)) else (spec,)
+            where = f"{m.__name__}.KNOBS['{name}']"
+            if not spec or spec[0] not in _LEN or len(spec) != _LEN[spec[0]]:
+                raise ValueError(f"{where} = {spec!r}: 형식은 (\"int\", lo, hi, 기본) | (\"float\", lo, hi, 기본) | (\"enum\", [선택지], 기본) | (\"str\", 최대길이, 기본) | (\"bool\", 기본)")
+            if not _check(spec, spec[-1]):
+                raise ValueError(f"{where} = {spec!r}: 기본값 {spec[-1]!r}이 자기 범위·선택지 밖입니다")
             if name in schema and schema[name] != spec:
-                raise ValueError(f"KNOB '{name}' declared twice with different specs ({m.__name__})")
-            schema[name] = tuple(spec)
+                raise ValueError(f"{where} = {spec!r}가 {owner[name]}의 {schema[name]!r}와 다릅니다 (같은 이름은 같은 명세로)")
+            schema[name], owner[name] = spec, where
     return schema
 
 
@@ -174,11 +186,17 @@ def read_improver(path: str | Path = IMPROVER_FILE) -> dict:
     src = read_block(Path(path), "improver")
     if src is None:
         raise ValueError(f"{path}: no EVOLVE-BLOCK 'improver'")
-    tree = ast.parse(src)
+    try:
+        tree = ast.parse(src)
+    except SyntaxError as e:
+        raise ValueError(f"{path}: IMPROVER 블록 문법 오류 (line {e.lineno}): {e.msg}")
     if len(tree.body) != 1 or not isinstance(tree.body[0], ast.Assign) or \
        [getattr(t, "id", None) for t in tree.body[0].targets] != ["IMPROVER"]:
         raise ValueError(f"{path}: block must be exactly `IMPROVER = {{...}}`")
-    v = ast.literal_eval(tree.body[0].value)
+    try:
+        v = ast.literal_eval(tree.body[0].value)
+    except ValueError:
+        raise ValueError(f"{path}: IMPROVER에는 숫자·문자열·bool·list·dict 값만 쓸 수 있습니다 (계산식·함수 호출 불가)")
     if not isinstance(v, dict):
         raise ValueError(f"{path}: IMPROVER must be a dict")
     return v

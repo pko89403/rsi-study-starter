@@ -16,6 +16,10 @@ def main() -> None:
     require_llm()
     K.require_ruler()
     cfg = yaml.safe_load(Path("config.yaml").read_text())
+    best = json.loads(Path("logs/archive.json").read_text()).get("best") if Path("logs/archive.json").exists() else None
+    if best and subprocess.run(["git", "diff", "--quiet", best, "--", *cfg["evolve_files"]]).returncode != 0:
+        sys.exit(f"{', '.join(cfg['evolve_files'])}가 champion({best})과 다릅니다. make round가 중간에 끊겼으면:\n"
+                 f"  git checkout {best} -- {' '.join(cfg['evolve_files'])}\n그다음 make test를 다시 실행하세요.")
     problems = json.loads(Path("data/test.json").read_text())
     scores = []
     for i in range(a.runs):
@@ -36,7 +40,7 @@ def main() -> None:
             print(f"run {i+1}: 예측이 run {i}와 완전히 같음 → 남은 run은 같은 점수로 채우고 건너뜀")
             scores += [res["correct"]] * (a.runs - len(scores)); break
     print(json.dumps({"test_n": len(problems), "runs": scores, "mean": sum(scores) / len(scores), "anchors_sha": K.anchors_sha(),
-                      "ruler": K.RULER_STATUS, "model": os.environ.get("LLM_MODEL")}))
+                      "ruler": K.RULER_STATUS, "model": os.environ.get("LLM_MODEL"), "commit": best}))
 
 
 if __name__ == "__main__":
