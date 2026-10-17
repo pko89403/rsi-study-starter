@@ -56,6 +56,9 @@ def check_ruler(root: Path = ROOT, remote: bool = True) -> tuple[str, str]:
             local = _git(root, "rev-parse", "-q", "--verify", ref)
     if not local:
         return "skipped", f"tag {RULER_TAG} 없음 (git fetch --force --tags origin)"
+    newer = [t for t in (_git(root, "tag", "-l", "ruler-v*") or "").split() if t[7:].isdigit() and int(t[7:]) > int(RULER_TAG[7:])]
+    if newer:   # 이 코드보다 새 기준이 있다: 옛 버전을 쓰고 있거나 git pull을 안 했다
+        print(f"[ruler] 경고: 더 새 기준 {max(newer, key=lambda t: int(t[7:]))}이 있습니다. git pull로 최신 코드를 받으세요.")
     d = _git(root, "diff", "--name-only", RULER_TAG, "--", *FIXED_FILES, *FIXED_DIRS)
     changed = [l for l in (d or "").splitlines() if l.strip()]
     if not changed:

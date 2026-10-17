@@ -392,9 +392,13 @@ def main() -> None:
     log_path = Path(cfg["log"])
     last_round = 0
     if log_path.exists():
-        lines = [l for l in log_path.read_text().splitlines() if l.strip()]
-        if lines:
-            last_round = json.loads(lines[-1])["round"]
+        for l in reversed(log_path.read_text().splitlines()):   # 중단으로 잘린 마지막 줄은 건너뛴다
+            try:
+                last_round = json.loads(l)["round"]; break
+            except (json.JSONDecodeError, KeyError):
+                continue
+    if archive.repo.head.is_detached:
+        print("[setup] 경고: detached HEAD입니다 (옛 tag·commit을 checkout한 상태). champion이 branch에 남지 않습니다. 보통은 git checkout main 후 실행합니다.")
     graph = build_graph(cfg, archive, last_round + rounds)
     try:
         graph.invoke({"rnd": last_round + 1}, {"recursion_limit": rounds * 20 + 10})
