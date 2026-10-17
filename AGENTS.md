@@ -21,6 +21,20 @@
 - `methods/` 아래 새 모듈 (README §6의 A)
 - `loop/prompts/*.md`
 
+## 주차 시작 절차 (사용자가 "N주차 시작"이라고 하면 이 순서로 진행한다)
+
+1. `git pull`. 데이터나 채점이 바뀌었으면 loop가 이전 기록을 `logs/old-<sha>/`로 옮긴다 (손댈 것 없음).
+2. `config.yaml`: `week: N`, `hook_changed`에 바꾼 hook 이름과 method 한 줄.
+   - N ≥ 4이면 `editable_blocks: [prompt, code]` (이후 주차도 유지). 그 전에는 `[prompt]`.
+   - 6주차도 블록은 그대로. `evaluator`는 넣지 않는다.
+3. 사용자가 준 method(주차 페이지 발제 노트 7번)를 `hooks/`에 구현한다. 함수 시그니처는 유지한다.
+   - 조절할 값은 `KNOBS`와 `KNOB_DOCS`로 선언한다 (README §7). 지난 주 hook과 같은 파일이면 합쳐서 둘 다 살린다.
+   - 6주차(자기 평가)는 `hooks/review_patch.py`나 `hooks/after_screen.py`에 넣는다. 참고 구현: `examples/`.
+   - 어느 블록·오답 유형을 겨냥할지는 `hooks/on_round_start.py`가 자기 기록으로 고른다. 따로 정하지 않는다.
+4. `make check` (LLM 호출 없음). 실패하면 고친다.
+5. `make round` → `make test` → `make results W=N`. 결과 표 한 줄(README §8 7칸)의 초안을 사용자에게 보여 준다.
+6. 사용자가 원하면 `make meta-propose` → `make meta-eval`. 채택(`make meta-adopt`)은 사용자에게 묻고 한다.
+
 ## 그 밖의 규칙
 
 - `data/test.json`과 test 예측 파일은 열지 않는다. test 점수를 보고 method를 고르지 않는다.

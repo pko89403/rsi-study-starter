@@ -168,6 +168,8 @@ should_stop(ctx)                                ⑩ 일찍 멈출지            
 
 운영자가 후보 논문 메소드를 실제로 구현해 돌려 본 예시가 [`examples/`](examples/README.md)에 있다. 효과·실패 이유·비용이 적혀 있다.
 
+코딩 어시스턴트(Claude Code·Codex·Gemini CLI)에게 "N주차 시작, method: ..."라고 하면 [`AGENTS.md`](AGENTS.md)의 주차 시작 절차대로 설정·구현·실행까지 한다.
+
 1. `hooks/` 안의 함수 하나(또는 둘)의 본문을 바꾼다. 시그니처는 그대로 둔다.
    hook에 안 들어가는 method는 아래 6의 B·C를 따른다.
 2. method에서 Improver agent가 조절해도 되는 값은 `KNOBS`로 선언한다 (아래 7). 안 해도 된다.
