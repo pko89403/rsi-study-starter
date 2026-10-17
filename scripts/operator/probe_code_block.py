@@ -1,9 +1,9 @@
 """Improver 후보 모델이 4주차 `code` EVOLVE-BLOCK(노드 본문 4개 + MAX_ATTEMPTS) patch를 낼 수 있는지 잰다.
 
 사용법:
-  uv run python -m scripts.probe_code_block --n 20                       # .env 의 IMPROVER_* (없으면 LLM_*) 설정으로
-  uv run python -m scripts.probe_code_block --n 20 --model qwen/qwen3-14b --base-url https://openrouter.ai/api/v1
-  uv run python -m scripts.probe_code_block --n 20 --model qwen3-14b --base-url http://localhost:1234/v1   # LM Studio
+  uv run python -m scripts.operator.probe_code_block --n 20                       # .env 의 IMPROVER_* (없으면 LLM_*) 설정으로
+  uv run python -m scripts.operator.probe_code_block --n 20 --model qwen/qwen3-14b --base-url https://openrouter.ai/api/v1
+  uv run python -m scripts.operator.probe_code_block --n 20 --model qwen3-14b --base-url http://localhost:1234/v1   # LM Studio
 
 하는 일: 실제 build_prompt(계약 포함)로 patch 요청 → parse → guard → 블록을 exec → 고정 배선 make_graph()
 → compile → 가짜 ask/try_sql 로 1회 invoke(첫 SQL은 실패하게 해 재시도 경로를 밟게 함). 단계별 실패 수와 통과율을 표로 낸다. 점수는 재지 않는다(그건 loop가 한다).
@@ -20,7 +20,7 @@ from loop import patch as P
 from loop.context import RoundContext
 from loop.env import load_env
 from hooks.build_prompt import build_prompt
-from sql_agent import llm
+import llm
 from sql_agent.run import MAX_STEPS
 from sql_agent.schema import schema_text
 

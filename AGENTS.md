@@ -9,7 +9,7 @@
 - `scripts/test_eval.py` — test 채점
 - `data/` — validation 100 · test 200 · few-shot pool 300 · SQLite DB
 - `sql_agent/run.py` — SQL agent. EVOLVE-BLOCK은 Improver agent의 patch로만 바뀐다
-- `improver/incumbent.py` — Improver agent의 파라미터 값. `make meta-adopt`로만 바뀐다
+- `knobs/incumbent.py` — Improver agent의 파라미터 값. `make meta-adopt`로만 바뀐다
 - `.claude/settings.json`, `CLAUDE.md`, `.gemini/settings.json`, 이 파일(`AGENTS.md`)
 
 `loop/prompts/*.md`는 고쳐도 된다 (8주차 goal 변경). `loop/run.py`에 노드를 더하는 것(README §6의 B)은 사람이 직접 하고 "전제 조건"에 적는다.
@@ -28,7 +28,7 @@
    데이터나 채점이 바뀌었으면 loop가 이전 기록을 `logs/old-<sha>/`로 옮긴다 (손댈 것 없음).
 2. `config.yaml`: `week: N`, `hook_changed`에 바꾼 hook 이름과 method 한 줄.
    - N ≥ 4이면 `editable_blocks: [prompt, code]` (이후 주차도 유지). 그 전에는 `[prompt]`.
-   - 6주차도 블록은 그대로. `evaluator`는 넣지 않는다.
+   - 6주차도 블록은 그대로다.
 3. 사용자가 준 method(주차 페이지 발제 노트 7번)를 `hooks/`에 구현한다. 함수 시그니처는 유지한다.
    - 조절할 값은 `KNOBS`와 `KNOB_DOCS`로 선언한다 (README §7). 지난 주 hook과 같은 파일이면 합쳐서 둘 다 살린다.
    - 6주차(자기 평가)는 `hooks/review_patch.py`나 `hooks/after_screen.py`에 넣는다. 참고 구현: `examples/`.
@@ -36,7 +36,7 @@
 4. `make check` (LLM 호출 없음). 실패하면 고친다.
 5. `make round` → `make test` → `make results W=N`. 결과 표 한 줄(README §8 7칸)의 초안을 사용자에게 보여 준다.
 6. 사용자가 원하면 `make meta-propose` → `make meta-eval`. 채택(`make meta-adopt`)은 사용자에게 묻고 한다.
-7. 8주차에는 추가로 `make meta-eval FILE=improver/v0.py SEED=9000` (처음 방법과 지금 방법 비교) 결과를 결과 표 7번째 칸에 적는다.
+7. 8주차에는 추가로 `make meta-eval FILE=knobs/v0.py SEED=9000` (처음 방법과 지금 방법 비교) 결과를 결과 표 7번째 칸에 적는다.
 8. 끝나면 이번 주 hook을 commit한다: `git add -A && git commit -m "week N: <method>"`.
 
 ## 그 밖의 규칙

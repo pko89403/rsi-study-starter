@@ -2,7 +2,7 @@
 data/database에 있는 DB의 문제만 쓴다. gold가 안 돌거나 결과가 비면 뺀다. v0(현재 sql_agent)를 돌려 틀린 방식을 붙인다.
 운영자가 한 번 실행한다 (LLM 호출 약 1,400회, gpt-4.1-nano 기준 몇 분·몇십 원).
 
-  uv run python -m scripts.make_catalog --train train.json --dev dev.json --out catalog.jsonl
+  uv run python -m scripts.operator.make_catalog --train train.json --dev dev.json --out catalog.jsonl
   (HF: uv run --with pyarrow python -c "import pyarrow.parquet as q,json;json.dump(q.read_table('train-00000-of-00001.parquet').to_pylist(),open('train.json','w'))")
 """
 from __future__ import annotations

@@ -1,12 +1,12 @@
-"""카탈로그(scripts/make_catalog.py 결과) + 명세(scripts/split_spec.yaml) → data/validation.json, test.json, fewshot_pool.json.
+"""카탈로그(scripts/operator/make_catalog.py 결과) + 명세(scripts/operator/split_spec.yaml) → data/validation.json, test.json, fewshot_pool.json.
 운영자가 한 번 실행하고 결과만 배포한다. 같은 카탈로그·명세·seed면 같은 결과.
 
-  uv run python -m scripts.make_splits --catalog catalog.jsonl [--spec scripts/split_spec.yaml] [--out data]
+  uv run python -m scripts.operator.make_splits --catalog catalog.jsonl [--spec scripts/operator/split_spec.yaml] [--out data]
 
 규칙
 - validation·pool은 train DB, test는 dev DB. 쌍둥이(같은 DB·같은 gold 골격의 paraphrase)는 한 split에 PER_GROUP개까지 (원래 Spider dev도 쌍을 담고 있다).
   pool에는 validation의 쌍둥이를 넣지 않는다 (같은 답이 예시로 새지 않게).
-- scripts/gold_excluded.json(운영자가 검토한 gold 오류)과 그 쌍둥이는 어디에도 넣지 않는다.
+- scripts/operator/gold_excluded.json(운영자가 검토한 gold 오류)과 그 쌍둥이는 어디에도 넣지 않는다.
 - 주차 want는 validation 최소 개수. validation과 test에 같은 비율로 넣는다: 어느 쪽이든 후보가 모자라면 두 쪽 다 그 비율로 낮춘다.
 - validation·test의 남는 자리는 v0가 맞힌 문제로 난이도 비율대로 채운다. 그래서 두 split의 v0 오답 유형 비율이 같다.
 """
@@ -89,8 +89,8 @@ def report(name: str, items: list[dict], spec: dict, scale: float) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--catalog", required=True); ap.add_argument("--spec", default="scripts/split_spec.yaml"); ap.add_argument("--out", default="data")
-    ap.add_argument("--excluded", default="scripts/gold_excluded.json")
+    ap.add_argument("--catalog", required=True); ap.add_argument("--spec", default="scripts/operator/split_spec.yaml"); ap.add_argument("--out", default="data")
+    ap.add_argument("--excluded", default="scripts/operator/gold_excluded.json")
     a = ap.parse_args()
     spec = yaml.safe_load(Path(a.spec).read_text())
     cat = [json.loads(l) for l in Path(a.catalog).read_text().splitlines() if l.strip()]

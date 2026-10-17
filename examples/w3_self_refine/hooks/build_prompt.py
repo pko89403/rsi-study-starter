@@ -48,8 +48,6 @@ CONTRACTS = {
   It does not know the gold answer.
 - ask(messages) -> str calls the LLM. Names available without import: END, ask, build_messages, extract_sql.
 - v0: select_schema returns {} (no change) and route always returns END (no retry). Keep the block under ~40 lines.""",
-    "evaluator": """Block 'evaluator' (evaluator/rules.py): select_problems(problems) -> list and compare(pred_rows, gold_rows, gold_sql) -> bool
-- These define how validation is scored. Changing them changes the score itself; the held-out test uses a frozen copy.""",
 }
 
 

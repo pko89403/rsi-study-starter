@@ -6,7 +6,7 @@
       "Edit(/scripts/test_eval.py)",
       "Edit(/data/**)",
       "Edit(/sql_agent/run.py)",
-      "Edit(/improver/incumbent.py)",
+      "Edit(/knobs/incumbent.py)",
       "Edit(/.claude/settings.json)",
       "Edit(/AGENTS.md)",
       "Edit(/CLAUDE.md)",

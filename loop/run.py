@@ -18,7 +18,7 @@ from loop import kernel as K
 from loop import patch as P
 from loop.archive import Archive
 from loop.context import RoundContext
-from sql_agent import llm
+import llm
 from hooks.select_parent import select_parent
 from hooks.on_round_start import on_round_start
 from hooks.diagnose import diagnose

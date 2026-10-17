@@ -28,7 +28,7 @@ def _norm(rows: list[tuple]) -> list[tuple]:
 
 def evaluate(pred_path: str, problems_path: str, db_dir: str, sql_timeout: float = 5.0, rules=None) -> dict:
     """rules: select_problems / compare 를 가진 모듈. None이면 고정본 rules_v0 (test 채점용).
-    loop는 evaluator.rules 를 넘긴다 (6주차에 Improver가 고칠 수 있는 블록)."""
+    loop와 test 모두 None(rules_v0)으로 부른다."""
     if rules is None:
         from evaluator import rules_v0 as rules
     problems = {p["id"]: p for p in rules.select_problems(json.loads(Path(problems_path).read_text()))}

@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
-from sql_agent import llm
+import llm
 from sql_agent.schema import schema_text
 
 DATA_DIR = Path(os.environ.get("STARTER_DATA_DIR", "data"))

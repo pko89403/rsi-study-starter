@@ -1,6 +1,6 @@
 """Improver 자기 방법(IMPROVER 파라미터(KNOBS) 값) 개선. 참가자가 자기 starter에서 실행하고, 채택은 본인이 정한다.
 
-  python -m loop.meta propose                       Improver LLM이 파라미터 1~2개를 바꾼 수정안을 improver/challenger.py에 쓴다
+  python -m loop.meta propose                       Improver LLM이 파라미터 1~2개를 바꾼 수정안을 knobs/challenger.py에 쓴다
   python -m loop.meta eval [--file F] [--n N]       내 archive의 상황 N개에서 기존(incumbent) vs 수정안(challenger) 짝 비교 → 판정 카드
   python -m loop.meta adopt [--file F] [--force --reason R]   수정안을 incumbent로 채택 (git commit)
 
@@ -13,10 +13,10 @@ from loop import kernel as K
 from loop import patch as P
 from loop import run as R
 from loop.context import RoundContext
-from sql_agent import llm
+import llm
 
 LEDGER = Path("logs/improver_ledger.jsonl")
-CHALLENGER = Path("improver/challenger.py")
+CHALLENGER = Path("knobs/challenger.py")
 ALPHA, GATE_P, COSMETIC_FRAC = 0.05, 0.10, 0.8
 
 

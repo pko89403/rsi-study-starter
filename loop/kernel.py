@@ -2,7 +2,7 @@
 
 - kernel_accept: 최종 accept 판정. hook accept와 AND로 묶여서 hook은 조건을 더 엄격하게만 할 수 있다.
 - anchors_sha: 고정 파일 hash. round마다 확인하고 바뀌면 loop가 멈춘다.
-- KNOBS: 참가자 hook이 선언한 파라미터(KNOBS)(이름·타입·범위·기본값). Improver는 improver/incumbent.py의 IMPROVER 값만 바꾼다.
+- KNOBS: 참가자 hook이 선언한 파라미터(KNOBS)(이름·타입·범위·기본값). Improver는 knobs/incumbent.py의 IMPROVER 값만 바꾼다.
 """
 from __future__ import annotations
 import ast, hashlib, json, os, subprocess, sys
@@ -14,9 +14,9 @@ FIXED_FILES = ["data/validation.json", "data/test.json", "data/fewshot_pool.json
                "loop/run.py", "loop/patch.py", "loop/archive.py", "loop/kernel.py", "loop/meta.py", "loop/context.py", "loop/env.py",
                ".claude/settings.json", "AGENTS.md", "CLAUDE.md", ".gemini/settings.json"]
 FIXED_DIRS = ["data/database"]   # 채점용 SQLite. 내용이 바뀌면 점수가 바뀐다
-RULER_TAG = "ruler-v13"   # 고정 파일의 기준 commit에 운영자가 단 tag. 고정 파일을 바꿀 때마다 번호를 올리고 `make ruler`
+RULER_TAG = "ruler-v14"   # 고정 파일의 기준 commit에 운영자가 단 tag. 고정 파일을 바꿀 때마다 번호를 올리고 `make ruler`
 RULER_STATUS = "unchecked"   # require_ruler() 결과: ok | override | skipped | changed. round·test·meta 기록에 남는다
-IMPROVER_FILE = "improver/incumbent.py"
+IMPROVER_FILE = "knobs/incumbent.py"
 WIDE_MARGIN = 4   # 많은 답이 바뀐 patch(프롬프트 수정 등)의 최소 순증. placebo 보정 전 기본값
 
 

@@ -1,8 +1,8 @@
-# 평가 데이터 구성 명세 (기록). 고정 데이터(data/)를 scripts/make_splits.py로 만들 때 쓴 값이다. 참가자는 고치지 않는다.
+# 평가 데이터 구성 명세 (기록). 고정 데이터(data/)를 scripts/operator/make_splits.py로 만들 때 쓴 값이다. 참가자는 고치지 않는다.
 # 3~8주차 후보 논문의 Abstract를 읽고 각 method가 고칠 문제 유형과 validation 100 중 최소 개수(want)를 정했다.
-# validation·test에 같은 비율로 넣고, 나머지는 v0가 맞힌 문제로 채운다. gold 오류(scripts/gold_excluded.json)는 넣지 않는다.
+# validation·test에 같은 비율로 넣고, 나머지는 v0가 맞힌 문제로 채운다. gold 오류(scripts/operator/gold_excluded.json)는 넣지 않는다.
 #
-# 유형 키 (scripts/make_catalog.py가 붙인다)
+# 유형 키 (scripts/operator/make_catalog.py가 붙인다)
 #   v0:   v0(gpt-4.1-nano)가 틀린 방식. ok / exec_error / empty / extra_cols / col_order / missing_cols / row_mismatch
 #   tags: gold SQL 특징. join / group / having / order / limit / nested / setop / agg / distinct / like / value / multi_cond
 #   hardness: easy / medium / hard / extra

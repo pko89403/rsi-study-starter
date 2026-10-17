@@ -147,7 +147,7 @@ def _call(ep: Endpoint, messages: list[dict], *, temperature: float, max_tokens:
             time.sleep(min(60, 2 ** (attempt - 1)) + random.random())
 
 
-if __name__ == "__main__":  # python -m sql_agent.providers : 캐시 확인 (서버 호출 없음)
+if __name__ == "__main__":  # python -m llm.providers : 캐시 확인 (서버 호출 없음)
     import tempfile
     calls = []
     globals()["_call"] = lambda ep, m, **kw: calls.append(kw["temperature"]) or f"out{len(calls)}"

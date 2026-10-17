@@ -6,13 +6,13 @@ check:   # LLM 비용 없이 설치를 확인: self-check + mock 2 round (별도
 	uv run python -m loop.patch
 	uv run python -m loop.archive
 	uv run python -m loop.meta selfcheck
-	uv run python -m sql_agent.providers
-	uv run python -m scripts.make_splits selfcheck
-	uv run python -m scripts.make_catalog selfcheck
-	@T=$$(mktemp -d) && git worktree add --detach --quiet "$$T" HEAD && \
+	uv run python -m llm.providers
+	uv run python -m scripts.operator.make_splits selfcheck
+	uv run python -m scripts.operator.make_catalog selfcheck
+	@T=$$(mktemp -d) && git worktree add --quiet -B _rsi_check "$$T" HEAD && \
 	cp -R hooks config.yaml "$$T"/ && cp -R loop/prompts "$$T"/loop/ && { [ ! -d methods ] || cp -R methods "$$T"/; } && \
 	(cd "$$T" && LLM_BACKEND=mock LLM_BASE_URL=x LLM_MODEL=mock RULER_OVERRIDE=1 uv run python -m loop.run --rounds 2); rc=$$?; \
-	git worktree remove --force "$$T"; \
+	git worktree remove --force "$$T"; git branch -D -q _rsi_check; \
 	exit $$rc
 	@echo "check ok"
 
