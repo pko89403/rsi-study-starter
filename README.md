@@ -23,7 +23,7 @@
 - `config.yaml`의 `editable_blocks`에 적은 블록만 고칠 수 있다.
   - 3주차까지 `[prompt]`, 4주차부터 `[prompt, code]`. 연 블록은 닫지 않는다.
   - 둘 이상 열려 있으면 어느 블록을 고칠지 Improver agent가 자기 accept 기록으로 고른다 (`hooks/on_round_start.py`).
-- `evaluator` 블록(`evaluator/rules.py`)도 있지만 열지 않는다. 판정은 고정 복사본 `rules_v0`로 하므로 열어도 점수에 영향이 없다.
+- 채점 규칙(`evaluator/rules_v0.py`)은 블록이 아니다. 고정이라 Improver agent가 기준을 느슨하게 바꿔 점수만 올릴 수 없다.
 
 ## 1. 10분 안에
 
@@ -159,7 +159,7 @@ hook 안에서 할 수 있는 것:
 - `data/test.json` 열기
 - `sql_agent/run.py`의 EVOLVE-BLOCK을 사람이 고치기 (SQL agent 변경은 patch 경로로만)
 - `loop/*.py`·`evaluator/`·`scripts/test_eval.py` 고치기 (고정. `loop/run.py`에 노드를 더하는 B만 예외)
-- `improver/incumbent.py`를 사람이 직접 고치기 (Improver agent의 수정안을 `make meta-adopt`로만)
+- `knobs/incumbent.py`를 사람이 직접 고치기 (Improver agent의 수정안을 `make meta-adopt`로만)
 
 예: Reflexion
 
@@ -174,16 +174,16 @@ round, parent, 대상 EVOLVE-BLOCK 내용, before 평가 결과(문제별 정오
 | 경로 | 하는 일 | 누가 고치나 |
 |---|---|---|
 | `sql_agent/run.py` | SQL agent (LangGraph, 위 2) | Improver agent (`editable_blocks`에 적힌 EVOLVE-BLOCK만) |
-| `sql_agent/llm.py`, `schema.py` | LLM 호출, 스키마 텍스트 | 사람 |
+| `sql_agent/schema.py` | 스키마 텍스트 | 사람 |
+| `llm/` | LLM 클라이언트. SQL agent와 Improver LLM이 함께 쓴다 (provider 설정, 응답 캐시, mock) | 사람 |
 | `evaluator/evaluate.py` | SQL 실행 결과를 정답과 비교 | 고정 |
-| `evaluator/rules.py` | `evaluator` EVOLVE-BLOCK. 판정에 쓰지 않는다 | 열지 않는다 |
-| `evaluator/rules_v0.py` | 채점 규칙 (고정 복사본). accept·champion·meta·test 판정 | 고정 |
+| `evaluator/rules_v0.py` | 채점 규칙. accept·champion·meta·test 판정 모두 이것으로 | 고정 |
 | `loop/run.py` | round loop. LangGraph `StateGraph` (위 3) | 고정 (B는 예외, 아래 6) |
 | `loop/kernel.py` | 고정 kernel: 최종 accept 판정, champion 규칙, 파라미터(KNOBS) 검사, 고정 파일 hash | 고정 |
 | `loop/patch.py` | EVOLVE-BLOCK 교체, AST guard, patch 정규화 | 고정 |
 | `loop/archive.py` | git commit/checkout, champion 추적 | 고정 |
 | `loop/meta.py` | Improver agent 자기 개선: `meta-propose` / `meta-eval` / `meta-adopt` (아래 7) | 고정 |
-| `improver/incumbent.py` | Improver agent의 파라미터 값 (`IMPROVER = {...}`, 데이터만) | Improver agent (수정안) → 각자 채택 |
+| `knobs/incumbent.py` | Improver agent의 파라미터 값 (`IMPROVER = {...}`, 데이터만). `v0.py`는 처음 값, `challenger.py`는 `make meta-propose`의 수정안 | Improver agent (수정안) → 각자 채택 |
 | `loop/prompts/` | 진단·patch 프롬프트 | 사람 (8주차에 goal 바꾸기) |
 | `hooks/*.py` | 결정 지점 10개. **매주 method는 이 중 하나의 본문을 바꾼다** | 각자 |
 | `methods/` | hook에서 부르는 새 모듈 (아래 6의 A). 처음에는 없고 필요할 때 만든다 | 각자 |
@@ -191,7 +191,7 @@ round, parent, 대상 EVOLVE-BLOCK 내용, before 평가 결과(문제별 정오
 | `logs/rounds.jsonl` | round당 한 줄 | loop |
 | `logs/archive.json` | champion·점수·시도한 patch 기록. **지우지 않는다** (지우면 지금 commit에서 다시 시작해 champion 기록을 잃는다) | loop |
 | `refs/rsi/*` (git) | 평가한 patch commit. branch(HEAD)는 champion일 때만 움직여서, 거부된 patch가 내 commit·`git pull`에 섞이지 않는다 | loop |
-| `scripts/` | test 평가, 결과 표, 데이터를 만든 스크립트(위키 데이터 구성) | — |
+| `scripts/` | test 평가(`test_eval.py`), 결과 표(`results.py`). `scripts/operator/`는 운영자가 데이터를 만들 때 쓴 도구 (위키 데이터 구성) | — |
 | `examples/` | 논문 메소드를 hook으로 구현해 실제로 돌려 본 예시(3·6·7·8주차)와 실측 결과 | 참고용 (복사해서 씀) |
 | `docs/` | README 그림. 원본은 `docs/diagrams/` | — |
 
@@ -277,9 +277,9 @@ def build_prompt(ctx):
 ```
 
 - 타입: `int`, `float`, `enum`(선택지 목록), `str`, `bool`. 범위 밖 값은 kernel이 기본값으로 되돌린다.
-- 값은 `improver/incumbent.py`의 `IMPROVER = {...}`에 있다. 주차가 쌓이면 파라미터도 쌓인다.
+- 값은 `knobs/incumbent.py`의 `IMPROVER = {...}`에 있다. 주차가 쌓이면 파라미터도 쌓인다.
 - 명령은 위 1의 `make meta-propose` / `make meta-eval` / `make meta-adopt`. 판정이 ADOPT가 아니면 채택에 `FORCE=1 REASON="..."`가 필요하다.
-- 8주차: `make meta-eval FILE=improver/v0.py SEED=9000`으로 처음 방법과 지금 방법을 짝 비교한다.
+- 8주차: `make meta-eval FILE=knobs/v0.py SEED=9000`으로 처음 방법과 지금 방법을 짝 비교한다.
 
 판정 카드 읽는 법, `meta-eval`이 하는 일, 비용은 위키 [Improver 자기 개선](https://github.com/pko89403/rsi-study-starter/wiki/Improver-자기-개선)에 있다.
 

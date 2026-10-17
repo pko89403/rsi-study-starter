@@ -4,13 +4,13 @@
  "meta": {
   "title": "starter 구성: 참가자 · Improver agent · SQL agent",
   "locale": "ko",
-  "output": "structure/starter-structure.html",
+  "output": "structure2/starter-structure.html",
   "quality_profile": "showcase",
   "repository": {
    "url": "https://github.com/pko89403/rsi-study-starter.git",
    "provider": "github",
    "link_mode": "web",
-   "revision": "de23c124d1f68f941cb1b33b8d9e35c0fe205fdf"
+   "revision": "daad658ae934e32eb28fa49b8dedc4c821ca982d"
   }
  },
  "components": [
@@ -129,7 +129,7 @@
    "id": "params",
    "type": "database",
    "label": "파라미터 값",
-   "sublabel": "improver/incumbent.py",
+   "sublabel": "knobs/incumbent.py",
    "pos": [
     40,
     520
@@ -140,7 +140,7 @@
    ],
    "sources": [
     {
-     "path": "improver/incumbent.py",
+     "path": "knobs/incumbent.py",
      "line": 1,
      "end_line": 6
     },
