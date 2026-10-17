@@ -306,7 +306,7 @@ def build_prompt(ctx):
 **판정 카드 읽는 법**
 
 - `ADOPT-RECOMMENDED`: 수정안이 통계적으로 낫다(단측 p < 0.05, 같은 주 K번째 판정이면 0.05/K). 유효 patch 비율도 떨어지지 않았다.
-- `KEEP`: 차이를 확인할 수 없다. **대부분의 주는 여기서 끝난다. 정상이다.**
+- `KEEP`: 차이를 확인할 수 없다. 수정안의 효과가 작으면 자주 나온다. 다음 `meta-propose`는 다른 손잡이를 시도한다.
 - `REJECT`: 수정안이 더 나쁘거나 유효 patch 비율이 떨어졌다.
 - `NULL`: 두 버전의 Improver 입력이 같다. hook이 바뀐 손잡이를 읽지 않는 것이다.
 - `COSMETIC` / `MECH-FAIL` / `HOLD`: patch가 거의 같음 / 둘 다 patch를 못 냄 / parent가 3개 미만.
@@ -342,6 +342,6 @@ def build_prompt(ctx):
 - **agent timeout**: `config.yaml`의 `agent_timeout_sec`(기본 1800초). 100문제 × 모델 속도.
 - **round 하나가 몇 분씩 걸림**: Improver LLM이 같은 내용을 반복하다 `improver_max_tokens`까지 쓰는 경우다 (로컬 소형 모델에서 가끔).
   그 patch는 parse 실패로 거부된다. 상한을 올려도 결과는 같고 시간만 늘어난다.
-- **점수가 전혀 안 움직임**: 흔하다. 거부가 많은 것이 정상이고, `rejected_by`와 `net`을 보면 어디서 막히는지 보인다.
+- **점수가 안 오름**: 목표는 매주 champion을 올리는 것이다. round 대부분이 거부되는 것은 탐색 과정이고, `rejected_by`와 `net`을 보면 어디서 막히는지 보인다. 바뀐 답이 많은 넓은 patch는 문턱이 높으니, 오류 유형 하나만 겨냥하는 method가 통과하기 쉽다.
   같은 patch만 반복하면 `resamples`가 3으로 찍힌다. 이때 `make meta-propose`로 손잡이를 바꿔 보는 것이 RSI 층의 역할이다.
   Improver LLM 교체는 평가 조건 3을 바꾸는 일이라 전원이 함께 정한다.
