@@ -14,55 +14,11 @@
 
 **세 층**: 참가자가 hooks를 고치고, Improver agent가 SQL agent의 EVOLVE-BLOCK(`prompt`, 4주차부터 `code`)을 고친다. 고정 kernel이 판정하고, test는 loop 밖에서 주 1회 돈다.
 
-```mermaid
-flowchart TB
-  P["참가자 + 코딩 어시스턴트<br/>발제 method를 구현"]
-  subgraph IA["Improver agent"]
-    direction LR
-    L["loop/<br/>round 실행"]
-    H["hooks/ 10개<br/>(+ methods/)"]
-    LLM["Improver LLM<br/>진단·patch"]
-  end
-  subgraph SA["SQL agent · sql_agent/run.py"]
-    B["EVOLVE-BLOCK<br/>prompt, 4주차부터 code"]
-  end
-  K["고정 kernel<br/>accept 판정 · champion"]
-  INC["improver/incumbent.py<br/>파라미터(KNOBS) 값"]
-  T["make test<br/>test 200 · loop 밖"]
-
-  P -->|hook 본문 수정| H
-  IA -->|patch 1개 / round| B
-  B -->|validation 점수| K
-  K -->|남김 / 되돌림| IA
-  IA -->|"수정안 (make meta-propose)"| INC
-  P -->|"채택 (make meta-adopt)"| INC
-  INC -.->|값| H
-  P -->|주 1회| T
-  T -.->|champion 코드| B
-```
+![starter 구성](docs/structure.png)
 
 SQL agent 안쪽(EVOLVE-BLOCK의 모양)은 아래:
 
-```mermaid
-flowchart TB
-  S([질문 + DB 스키마]) --> SS
-  subgraph CODE["EVOLVE-BLOCK code · 4주차부터"]
-    SS["select_schema<br/>관련 테이블만 남김"]
-    G["generate<br/>LLM → SQL"]
-    R{"route<br/>fix 또는 END"}
-    F["fix<br/>오류 보고 SQL 다시"]
-  end
-  subgraph PROMPT["EVOLVE-BLOCK prompt"]
-    BM["build_messages<br/>SYSTEM_PROMPT · FEWSHOT_IDS"]
-  end
-  E["execute<br/>SQLite 실행 (고정)"]
-  SS --> G --> E --> R
-  R -->|fix| F --> E
-  R -->|END| O([예측 SQL])
-  BM -.-> G
-  BM -.-> F
-  M["MAX_FIX 5<br/>fix 상한 (고정)"] -.-> R
-```
+![SQL agent](docs/sql_agent.png)
 
 **EVOLVE-BLOCK**은 Improver agent가 고칠 수 있는 유일한 코드 구간이다.
 
@@ -122,23 +78,8 @@ make meta-adopt              # 수정안 채택 (본인이 정한다)
 
 ## 2. 폴더
 
-**loop 안·밖**: loop 안(매 round)은 validation을 채점해 고정 kernel이 판정하고 champion을 갱신한다. loop 밖(주 1회)은 champion 코드로 test를 돌려 결과 표에 적는다. test 점수는 다음 method 선택에 쓰지 않는다. SQL agent의 EVOLVE-BLOCK 안쪽 그림은 위 1번 참고.
+**loop 안·밖**: loop 안(매 round)은 validation을 채점해 고정 kernel이 판정하고 champion을 갱신한다. loop 밖(주 1회)은 champion 코드로 test를 돌려 결과 표에 적는다. test 점수는 다음 method 선택에 쓰지 않는다. 그림은 맨 위 starter 구성의 `make test`(loop 밖)와 `evaluator`·`고정 kernel`(loop 안) 참고.
 
-```mermaid
-flowchart TB
-  subgraph IN["loop 안 · 매 round"]
-    direction LR
-    A["SQL agent 실행<br/>validation 100 (screen 20)"] --> B["rules_v0 채점"]
-    B --> C["고정 kernel 판정<br/>문제별 순증 · hook accept와 AND"]
-    C --> D["champion 갱신"]
-  end
-  subgraph OUT["loop 밖 · 주 1회"]
-    direction LR
-    E["make test<br/>champion 코드 · test 200 × 3회"] --> F["rules_v0 채점 · 평균"]
-    F --> G["결과 표<br/>method 선택에 쓰지 않음"]
-  end
-  D -.->|champion 코드| E
-```
 
 | 경로 | 하는 일 | 누가 고치나 |
 |---|---|---|
@@ -200,32 +141,7 @@ loop는 round마다 아래 순서로 돌고, 번호 붙은 곳에서 `hooks/`의
 
 **한 round**: `loop/run.py`의 노드 순서와 거부 경로.
 
-```mermaid
-flowchart TB
-  BEGIN["begin<br/>① select_parent · parent 평가 (100문제)<br/>② on_round_start: 블록·오답 유형 자기 선택"]
-  D["diagnose ③<br/>틀린 문제 → 원인 한 줄"]
-  PR["propose<br/>④ build_prompt + ⑤ propose<br/>사전 검사 거부 시 재요청 최대 3"]
-  RV["review ⑥<br/>review_patch"]
-  AP["apply<br/>guard · 적용 · compile · git commit"]
-  SC["screen ⑦<br/>20문제 · after_screen"]
-  FU["full ⑧<br/>100문제 · accept AND kernel"]
-  AE["after_eval ⑨<br/>rounds.jsonl 한 줄"]
-  ST{"⑩ should_stop<br/>또는 마지막 round"}
-
-  BEGIN --> D --> PR
-  PR -->|통과| RV
-  RV -->|통과| AP
-  AP -->|통과| SC
-  SC -->|통과| FU
-  FU --> AE
-  PR -.->|거부| AE
-  RV -.->|거부| AE
-  AP -.->|거부| AE
-  SC -.->|거부| AE
-  AE --> ST
-  ST -->|아니오| BEGIN
-  ST -->|예| FIN([끝: champion으로 맞춤])
-```
+![한 round](docs/round.png)
 
 ```
 parent = select_parent(archive)                 ① 어느 commit에서 시작하나        기본: champion

@@ -1,0 +1,45 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": { "title": "한 round: loop 단계 · hook · SQL agent", "locale": "ko", "output": "round/one-round.html", "quality_profile": "showcase", "repository": {"url": "https://github.com/pko89403/rsi-study-starter.git", "provider": "github", "link_mode": "web", "revision": "de23c124d1f68f941cb1b33b8d9e35c0fe205fdf"} },
+  "lanes": [
+    { "id": "hook", "label": "hook (method 자리)" },
+    { "id": "loop", "label": "loop (고정 순서)" },
+    { "id": "sql", "label": "SQL agent · 채점" },
+    { "id": "rec", "label": "판정 · 기록" }
+  ],
+  "mainPath": ["l0", "l1", "l2", "l3", "l4", "l5"],
+  "nodes": [
+    { "id": "h0", "lane": "hook", "col": 0, "type": "frontend", "label": "select_parent", "sublabel": "on_round_start: 블록·유형 선택", "sources": [{"path": "hooks/on_round_start.py", "line": 49, "end_line": 59}] },
+    { "id": "h1", "lane": "hook", "col": 1, "type": "frontend", "label": "diagnose", "sublabel": "원인 한 줄", "sources": [{"path": "hooks/diagnose.py", "line": 17}] },
+    { "id": "h2", "lane": "hook", "col": 2, "type": "frontend", "label": "build_prompt · propose", "sublabel": "Improver LLM", "sources": [{"path": "hooks/build_prompt.py", "line": 74}, {"path": "hooks/propose.py", "line": 7}] },
+    { "id": "h3", "lane": "hook", "col": 3, "type": "frontend", "label": "review_patch", "sublabel": "적용 전 검토", "sources": [{"path": "hooks/review_patch.py", "line": 9}] },
+    { "id": "h4", "lane": "hook", "col": 4, "type": "frontend", "label": "after_screen", "sublabel": "100문제로 갈지", "sources": [{"path": "hooks/after_screen.py", "line": 7}] },
+    { "id": "h5", "lane": "hook", "col": 5, "type": "frontend", "label": "accept · after_eval", "sublabel": "should_stop", "sources": [{"path": "hooks/accept.py", "line": 8}] },
+    { "id": "l0", "lane": "loop", "col": 0, "type": "backend", "label": "① 시작", "sublabel": "parent 평가", "sources": [{"path": "loop/run.py", "line": 171, "end_line": 205}] },
+    { "id": "l1", "lane": "loop", "col": 1, "type": "backend", "label": "② 진단", "sources": [{"path": "loop/run.py", "line": 207, "end_line": 209}] },
+    { "id": "l2", "lane": "loop", "col": 2, "type": "backend", "label": "③ patch 받기", "sublabel": "사전 검사 · 재요청 3", "sources": [{"path": "loop/run.py", "line": 211, "end_line": 225}] },
+    { "id": "l3", "lane": "loop", "col": 3, "type": "backend", "label": "④ 검사 · 적용", "sublabel": "guard · commit", "sources": [{"path": "loop/run.py", "line": 227, "end_line": 256}] },
+    { "id": "l4", "lane": "loop", "col": 4, "type": "backend", "label": "⑤ screen", "sublabel": "20문제", "sources": [{"path": "loop/run.py", "line": 258, "end_line": 271}] },
+    { "id": "l5", "lane": "loop", "col": 5, "type": "backend", "label": "⑥ full · 판정", "sublabel": "100문제", "sources": [{"path": "loop/run.py", "line": 273, "end_line": 293}] },
+    { "id": "s0", "lane": "sql", "col": 0, "type": "database", "label": "실행 · 채점", "sublabel": "validation 100", "sources": [{"path": "loop/run.py", "line": 70, "end_line": 85}] },
+    { "id": "s4", "lane": "sql", "col": 4, "type": "database", "label": "실행 · 채점", "sublabel": "screen 20", "sources": [{"path": "evaluator/evaluate.py", "line": 29}] },
+    { "id": "s5", "lane": "sql", "col": 5, "type": "database", "label": "실행 · 채점", "sublabel": "validation 100", "sources": [{"path": "evaluator/rules_v0.py", "line": 11}] },
+    { "id": "r3", "lane": "rec", "col": 3, "type": "messagebus", "label": "patch commit", "sublabel": "refs/rsi (branch 밖)", "sources": [{"path": "loop/archive.py", "line": 28, "end_line": 39}] },
+    { "id": "r5", "lane": "rec", "col": 5, "type": "security", "label": "고정 kernel", "sublabel": "문제별 순증 → champion", "sources": [{"path": "loop/kernel.py", "line": 84, "end_line": 102}, {"path": "loop/archive.py", "line": 41, "end_line": 55}] }
+  ],
+  "edges": [
+    { "id": "m1", "from": "l0", "to": "l1" }, { "id": "m2", "from": "l1", "to": "l2" }, { "id": "m3", "from": "l2", "to": "l3" },
+    { "id": "m4", "from": "l3", "to": "l4" }, { "id": "m5", "from": "l4", "to": "l5" },
+    { "id": "k0", "from": "h0", "to": "l0" }, { "id": "k1", "from": "h1", "to": "l1" }, { "id": "k2", "from": "h2", "to": "l2" },
+    { "id": "k3", "from": "h3", "to": "l3" }, { "id": "k4", "from": "h4", "to": "l4" }, { "id": "k5", "from": "h5", "to": "l5" },
+    { "id": "x0", "from": "l0", "to": "s0", "label": "실행" },
+    { "id": "x4", "from": "l4", "to": "s4", "label": "실행" },
+    { "id": "x5", "from": "l5", "to": "s5", "label": "실행" },
+    { "id": "c3", "from": "l3", "to": "r3", "label": "commit", "variant": "dashed" },
+    { "id": "j5", "from": "s5", "to": "r5", "label": "정답 여부", "variant": "emphasis" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "남기는 조건", "items": ["hook accept AND 고정 kernel", "바뀐 답 ≤3: 순증 ≥1·잃은 문제 0 / ≤12: 순증 ≥2·잃은 문제 ≤1 / 그 밖: 순증 ≥4", "champion보다 높을 때만 branch를 옮김"] },
+    { "dot": "rose", "title": "거부되면", "items": ["③④⑤⑥ 어디서 거부돼도 rounds.jsonl에 한 줄", "다음 round는 champion에서 다시 시작", "한 주 = 20 round"] }
+  ]
+}

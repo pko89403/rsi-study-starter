@@ -1,0 +1,349 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "starter 구성: 참가자 · Improver agent · SQL agent",
+  "locale": "ko",
+  "output": "structure/starter-structure.html",
+  "quality_profile": "showcase",
+  "repository": {
+   "url": "https://github.com/pko89403/rsi-study-starter.git",
+   "provider": "github",
+   "link_mode": "web",
+   "revision": "de23c124d1f68f941cb1b33b8d9e35c0fe205fdf"
+  }
+ },
+ "components": [
+  {
+   "id": "participant",
+   "type": "external",
+   "label": "참가자",
+   "sublabel": "+ 코딩 어시스턴트",
+   "pos": [
+    40,
+    40
+   ],
+   "size": [
+    150,
+    60
+   ],
+   "sources": [
+    {
+     "path": "AGENTS.md",
+     "line": 24,
+     "end_line": 40
+    }
+   ]
+  },
+  {
+   "id": "hooks",
+   "type": "backend",
+   "label": "hooks/ 10개",
+   "sublabel": "method를 넣는 곳",
+   "pos": [
+    40,
+    200
+   ],
+   "size": [
+    150,
+    64
+   ],
+   "sources": [
+    {
+     "path": "hooks/build_prompt.py",
+     "line": 74
+    },
+    {
+     "path": "hooks/on_round_start.py",
+     "line": 49
+    }
+   ]
+  },
+  {
+   "id": "loop",
+   "type": "backend",
+   "label": "loop",
+   "sublabel": "loop/run.py · round 실행",
+   "pos": [
+    300,
+    200
+   ],
+   "size": [
+    170,
+    64
+   ],
+   "sources": [
+    {
+     "path": "loop/run.py",
+     "line": 171,
+     "end_line": 313
+    }
+   ]
+  },
+  {
+   "id": "llm",
+   "type": "cloud",
+   "label": "Improver LLM",
+   "sublabel": "gpt-4.1-nano · 진단·patch",
+   "pos": [
+    40,
+    360
+   ],
+   "size": [
+    150,
+    64
+   ],
+   "sources": [
+    {
+     "path": "hooks/propose.py",
+     "line": 7
+    }
+   ]
+  },
+  {
+   "id": "kernel",
+   "type": "security",
+   "label": "고정 kernel",
+   "sublabel": "accept 판정 · champion",
+   "pos": [
+    300,
+    360
+   ],
+   "size": [
+    170,
+    64
+   ],
+   "sources": [
+    {
+     "path": "loop/kernel.py",
+     "line": 84,
+     "end_line": 102
+    },
+    {
+     "path": "loop/archive.py",
+     "line": 67
+    }
+   ]
+  },
+  {
+   "id": "params",
+   "type": "database",
+   "label": "파라미터 값",
+   "sublabel": "improver/incumbent.py",
+   "pos": [
+    40,
+    520
+   ],
+   "size": [
+    150,
+    64
+   ],
+   "sources": [
+    {
+     "path": "improver/incumbent.py",
+     "line": 1,
+     "end_line": 6
+    },
+    {
+     "path": "loop/meta.py",
+     "line": 250
+    }
+   ]
+  },
+  {
+   "id": "git",
+   "type": "database",
+   "label": "git + logs/",
+   "sublabel": "champion 커밋 · rounds.jsonl",
+   "pos": [
+    300,
+    520
+   ],
+   "size": [
+    170,
+    64
+   ],
+   "sources": [
+    {
+     "path": "loop/archive.py",
+     "line": 28,
+     "end_line": 55
+    }
+   ]
+  },
+  {
+   "id": "sqlagent",
+   "type": "backend",
+   "label": "SQL agent",
+   "sublabel": "sql_agent/run.py · EVOLVE-BLOCK",
+   "pos": [
+    620,
+    200
+   ],
+   "size": [
+    190,
+    64
+   ],
+   "sources": [
+    {
+     "path": "sql_agent/run.py",
+     "line": 53,
+     "end_line": 105
+    }
+   ]
+  },
+  {
+   "id": "evaluator",
+   "type": "security",
+   "label": "evaluator",
+   "sublabel": "실행 결과 비교 · rules_v0",
+   "pos": [
+    620,
+    360
+   ],
+   "size": [
+    190,
+    64
+   ],
+   "sources": [
+    {
+     "path": "evaluator/evaluate.py",
+     "line": 29
+    },
+    {
+     "path": "evaluator/rules_v0.py",
+     "line": 11
+    }
+   ]
+  },
+  {
+   "id": "test",
+   "type": "external",
+   "label": "make test",
+   "sublabel": "test 200 · loop 밖",
+   "pos": [
+    620,
+    40
+   ],
+   "size": [
+    190,
+    60
+   ],
+   "sources": [
+    {
+     "path": "scripts/test_eval.py",
+     "line": 1,
+     "end_line": 47
+    }
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "region",
+   "label": "Improver agent",
+   "wraps": [
+    "hooks",
+    "loop",
+    "llm",
+    "kernel"
+   ]
+  },
+  {
+   "kind": "region",
+   "label": "SQL agent · 채점",
+   "wraps": [
+    "sqlagent",
+    "evaluator"
+   ]
+  }
+ ],
+ "connections": [
+  {
+   "id": "edit-hooks",
+   "from": "participant",
+   "to": "hooks",
+   "label": "method 구현"
+  },
+  {
+   "id": "loop-hooks",
+   "from": "loop",
+   "to": "hooks",
+   "label": "결정 위임"
+  },
+  {
+   "id": "hooks-llm",
+   "from": "hooks",
+   "to": "llm",
+   "label": "진단·patch 요청"
+  },
+  {
+   "id": "run-patch",
+   "from": "loop",
+   "to": "sqlagent",
+   "label": "실행 · patch",
+   "variant": "emphasis"
+  },
+  {
+   "id": "score",
+   "from": "sqlagent",
+   "to": "evaluator",
+   "label": "예측 SQL"
+  },
+  {
+   "id": "judge",
+   "from": "evaluator",
+   "to": "kernel",
+   "label": "문제별 정답"
+  },
+  {
+   "id": "record",
+   "from": "kernel",
+   "to": "git",
+   "label": "champion만 branch"
+  },
+  {
+   "id": "weekly-test",
+   "from": "test",
+   "to": "sqlagent",
+   "label": "champion 재기",
+   "variant": "dashed"
+  },
+  {
+   "id": "propose-params",
+   "from": "llm",
+   "to": "params",
+   "label": "수정안 (meta-propose)",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "amber",
+   "title": "참가자가 하는 일",
+   "items": [
+    "hooks/에 method 구현 (AGENTS.md 절차)",
+    "make round · make test · make results",
+    "파라미터 수정안 채택: make meta-adopt (loop가 다음 round에 값을 읽음)"
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "Improver agent",
+   "items": [
+    "round마다 EVOLVE-BLOCK에 patch 1개",
+    "고칠 블록·오답 유형은 지난 accept 기록으로 스스로 고름",
+    "남길지는 고정 kernel이 문제별 순증으로 판정"
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "SQL agent",
+   "items": [
+    "prompt 블록, 4주차부터 code 블록",
+    "배선과 execute는 고정",
+    "test 200은 loop 밖 make test로만 잰다"
+   ]
+  }
+ ]
+}

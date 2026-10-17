@@ -1,0 +1,32 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": { "title": "3~8주차 한 주의 흐름", "locale": "ko", "output": "week/one-week.html", "quality_profile": "showcase", "repository": {"url": "https://github.com/pko89403/rsi-study-starter.git", "provider": "github", "link_mode": "web", "revision": "de23c124d1f68f941cb1b33b8d9e35c0fe205fdf"} },
+  "lanes": [
+    { "id": "presenter", "label": "발제자 (세션)" },
+    { "id": "me", "label": "참가자 + 코딩 어시스턴트" },
+    { "id": "imp", "label": "Improver agent" }
+  ],
+  "mainPath": ["propose", "implement", "check", "round", "test", "result"],
+  "nodes": [
+    { "id": "propose", "lane": "presenter", "col": 0, "type": "external", "label": "method 제안", "sublabel": "어느 hook을 어떻게" },
+    { "id": "share", "lane": "presenter", "col": 5, "type": "external", "label": "다음 세션 공유", "sublabel": "원하는 사람" },
+    { "id": "implement", "lane": "me", "col": 1, "type": "frontend", "label": "hooks/ 구현", "sublabel": "N주차 시작 · AGENTS.md", "sources": [{"path": "AGENTS.md", "line": 24, "end_line": 40}] },
+    { "id": "check", "lane": "me", "col": 2, "type": "frontend", "label": "make check", "sublabel": "LLM 호출 없음", "sources": [{"path": "Makefile", "line": 4, "end_line": 18}] },
+    { "id": "test", "lane": "me", "col": 4, "type": "frontend", "label": "make test", "sublabel": "test 200 × 3회", "sources": [{"path": "scripts/test_eval.py", "line": 1, "end_line": 47}] },
+    { "id": "result", "lane": "me", "col": 5, "type": "database", "label": "결과 표 한 줄", "sublabel": "make results · 7칸" },
+    { "id": "round", "lane": "imp", "col": 3, "type": "backend", "label": "make round", "sublabel": "20 round · 약 10분", "sources": [{"path": "loop/run.py", "line": 386, "end_line": 408}] },
+    { "id": "meta", "lane": "imp", "col": 4, "type": "messagebus", "label": "meta-propose · eval", "sublabel": "선택 · 채택은 참가자", "sources": [{"path": "loop/meta.py", "line": 68}, {"path": "loop/meta.py", "line": 140}] }
+  ],
+  "edges": [
+    { "id": "w1", "from": "propose", "to": "implement", "label": "각자 구현", "variant": "emphasis" },
+    { "id": "w2", "from": "implement", "to": "check" },
+    { "id": "w3", "from": "check", "to": "round", "label": "check ok" },
+    { "id": "w4", "from": "round", "to": "test", "label": "champion" },
+    { "id": "w5", "from": "test", "to": "result" },
+    { "id": "w6", "from": "round", "to": "meta", "label": "선택", "variant": "dashed", "role": "branch" },
+    { "id": "w7", "from": "result", "to": "share", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "amber", "title": "4주차 · 6주차", "items": ["4주차: editable_blocks: [prompt, code] (이후 유지)", "6주차: 자기 평가는 review_patch · after_screen에", "코딩 어시스턴트에게 'N주차 시작'이라고 하면 이 순서로 진행"] }
+  ]
+}

@@ -1,9 +1,0 @@
-flowchart TB
-  A["발제<br/>method 제안"] --> B["코딩 어시스턴트로 hooks 구현<br/>AGENTS.md 절차"]
-  B --> C["make check<br/>LLM 호출 없음"]
-  C --> D["make round<br/>20 round"]
-  D --> E["make test<br/>test 3회 평균"]
-  E --> F["make results W=N"]
-  F --> G["결과 표 한 줄"]
-  F -.->|선택| M["make meta-propose<br/>→ meta-eval → meta-adopt"]
-  M -.->|다음 주 파라미터 값| D

@@ -1,0 +1,31 @@
+{
+  "schema_version": 2, "diagram_type": "workflow",
+  "meta": { "title": "SQL agent: 문제 하나를 푸는 graph", "locale": "ko", "output": "sqlagent/sql-agent.html", "quality_profile": "showcase", "repository": {"url": "https://github.com/pko89403/rsi-study-starter.git", "provider": "github", "link_mode": "web", "revision": "de23c124d1f68f941cb1b33b8d9e35c0fe205fdf"} },
+  "lanes": [
+    { "id": "prompt", "label": "prompt 블록" },
+    { "id": "code", "label": "code 블록 (4주차부터)" },
+    { "id": "fixed", "label": "고정 (블록 밖)" }
+  ],
+  "mainPath": ["select", "generate", "execute", "route", "end"],
+  "nodes": [
+    { "id": "msgs", "lane": "prompt", "col": 1, "type": "frontend", "label": "build_messages", "sublabel": "system prompt · few-shot", "sources": [{"path": "sql_agent/run.py", "line": 53, "end_line": 65}] },
+    { "id": "select", "lane": "code", "col": 0, "type": "backend", "label": "select_schema", "sublabel": "v0: 그대로", "sources": [{"path": "sql_agent/run.py", "line": 85, "end_line": 88}] },
+    { "id": "generate", "lane": "code", "col": 1, "type": "backend", "label": "generate", "sublabel": "LLM → SQL", "sources": [{"path": "sql_agent/run.py", "line": 90, "end_line": 92}] },
+    { "id": "route", "lane": "code", "col": 3, "type": "backend", "label": "route", "sublabel": "v0: 항상 END", "sources": [{"path": "sql_agent/run.py", "line": 102, "end_line": 104}] },
+    { "id": "fix", "lane": "code", "col": 4, "type": "backend", "label": "fix", "sublabel": "오류 보고 다시 생성", "sources": [{"path": "sql_agent/run.py", "line": 94, "end_line": 100}] },
+    { "id": "execute", "lane": "fixed", "col": 2, "type": "database", "label": "execute", "sublabel": "SQLite 5초", "sources": [{"path": "sql_agent/run.py", "line": 111, "end_line": 113}] },
+    { "id": "end", "lane": "fixed", "col": 5, "type": "external", "label": "END", "sublabel": "예측 SQL", "sources": [{"path": "sql_agent/run.py", "line": 121, "end_line": 139}] }
+  ],
+  "edges": [
+    { "id": "e1", "from": "select", "to": "generate" },
+    { "id": "e0", "from": "msgs", "to": "generate", "label": "메시지" },
+    { "id": "e2", "from": "generate", "to": "execute", "label": "SQL" },
+    { "id": "e3", "from": "execute", "to": "route", "label": "ok / error" },
+    { "id": "e4", "from": "route", "to": "end", "label": "END", "variant": "emphasis" },
+    { "id": "e5", "from": "route", "to": "fix", "label": "fix", "role": "branch" },
+    { "id": "e6", "from": "fix", "to": "execute", "label": "최대 5회", "role": "return", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "amber", "title": "Improver agent가 고치는 곳", "items": ["prompt 블록: SYSTEM_PROMPT · FEWSHOT_IDS · build_messages", "code 블록(4주차부터): select_schema · generate · fix · route", "배선과 execute, fix 상한 5회는 고정"] }
+  ]
+}
