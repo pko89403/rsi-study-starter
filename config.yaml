@@ -1,5 +1,5 @@
 rounds: 20
-week: 0
+week: 0                  # 주차 번호. 매주 참가자가 바꾼다 (결과 표·meta 판정이 주차별로 묶인다)
 validation: data/validation.json
 fewshot_pool: data/fewshot_pool.json
 tables: data/tables.json
@@ -10,7 +10,10 @@ screen_drop: 2           # screen에서 이만큼 떨어지면 거부
 agent_timeout_sec: 1800
 sql_timeout_sec: 5
 improver_max_tokens: 4096   # Improver LLM 출력 상한(진단·patch). 7B 정상 patch는 300~600토큰. 추론 모델(Qwen3, gpt-oss)은 생각 토큰도 여기서 쓰므로 8192~16384
-editable_blocks: [prompt]    # Improver가 고칠 수 있는 SQL agent 블록. 4주차 예: [prompt, code]. evaluator는 판정이 rules_v0라 열어도 효과가 없다
+# 4주차부터 [prompt, code]로 바꾼다: Improver가 SQL agent의 노드 본문(select_schema·generate·fix)과 route도 고친다.
+#   실행 오류만 fix로 보내는 route patch는 바뀐 답이 적어 kernel 문턱이 낮다 (hooks/on_round_start.py의 target 선택이 이때부터 의미를 가진다).
+# 6주차에도 이 줄은 바꾸지 않는다. evaluator는 판정이 rules_v0라 열어도 효과가 없고, 자기 평가는 hooks/review_patch.py·after_screen.py에 넣는다.
+editable_blocks: [prompt]    # Improver가 고칠 수 있는 SQL agent 블록
 evolve_files: [sql_agent/run.py, evaluator/rules.py]   # 블록이 들어 있는 파일
 log: logs/rounds.jsonl
 hook_changed: none       # 이번 주에 바꾼 hook 이름 (결과 표용)
