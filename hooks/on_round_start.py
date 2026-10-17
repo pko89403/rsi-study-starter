@@ -1,7 +1,7 @@
 """round 시작 직후(before 점수가 나온 뒤, 진단 전)에 할 일.
 기본: Improver agent가 이번 round에 고칠 블록과 겨냥할 오답 유형(target_error_class)을 자기 지난 round 결과로 고른다 (UCB1).
 선택지 = config.yaml의 editable_blocks × ARMS. 4주차에 editable_blocks에 code를 더하면 선택지가 저절로 늘어난다 (운영자 작업 없음).
-운영자는 선택지만 주고, 어느 값이 좋은지는 Improver가 자기 accept 기록으로 정한다. self_select=False면 IMPROVER 값을 그대로 쓴다.
+운영자는 선택지만 주고, 어느 값이 좋은지는 Improver가 자기 accept 기록으로 정한다. SELF_SELECT=False면 블록은 돌아가며, 유형은 build_prompt.TARGET_ERROR_CLASS를 쓴다.
 3주차까지(prompt 블록만): prompt 지시문은 모든 질문에 영향을 줘서, 유형을 겨냥해도 바뀐 답이 많다 (실측 28~39개). 사실상 any가 남는다.
 4주차부터(config.yaml editable_blocks: [prompt, code]): exec_error를 겨냥한 route·fix patch는 실행 오류 문제만 바꿔 좁다. 이때 이 선택이 효과를 낸다."""
 from __future__ import annotations
@@ -10,8 +10,8 @@ from pathlib import Path
 from loop.context import RoundContext
 
 ARMS = ["any", "exec_error", "mismatch"]   # 겨냥할 오답 유형. 선택지 하나 = "블록:유형" (예: "code:exec_error")
-KNOBS = {"self_select": ("bool", True)}
-KNOB_DOCS = {"self_select": "if true, each round picks which open block to patch and which wrong answers to target, from past round outcomes (UCB1 on accept rate); if false, blocks rotate and the fixed target_error_class value is used"}
+# KNOBS가 아닌 이유: make meta-eval은 round 시작(on_round_start)을 재현하지 않아 이 값의 효과를 잴 수 없다 (판정이 늘 NULL).
+SELF_SELECT = True
 CHOICES = Path("logs/self_select.jsonl")   # round마다 고른 값. rounds.jsonl과 round 번호로 이어 보상(accept 여부)을 센다
 
 
@@ -47,7 +47,7 @@ def history(log: Path, choices: Path = CHOICES) -> list[tuple[str, float]]:
 
 
 def on_round_start(ctx: RoundContext) -> None:
-    if not (ctx.improver or {}).get("self_select", KNOBS["self_select"][-1]):
+    if not SELF_SELECT:
         return None
     arms = [f"{b}:{t}" for b in ctx.config["editable_blocks"] for t in ARMS]
     arm = choose(history(Path(ctx.config["log"])), arms)

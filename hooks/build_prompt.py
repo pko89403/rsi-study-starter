@@ -12,13 +12,11 @@ KNOBS = {
     "n_wrong": ("int", 3, 20, 10),       # 보여 줄 틀린 문제 수
     "show_pool": ("int", 0, 20, 12),     # 보여 줄 few-shot pool 후보 수
     "guidance": ("str", 400, ""),        # patch 작성 지침 한두 문장
-    "target_error_class": ("enum", ["any", "exec_error", "mismatch", "rotate"], "any"),   # 이번 round에 겨냥할 오답 유형
 }
 KNOB_DOCS = {   # Improver LLM이 읽는 파라미터 설명
     "n_wrong": "how many wrong validation examples (question, predicted SQL, error) the patch prompt shows",
     "show_pool": "how many few-shot pool candidates (id, db, question) the patch prompt lists for choosing FEWSHOT_IDS",
     "guidance": "an instruction sentence added to the patch prompt telling the patch writer how to write patches",
-    "target_error_class": "which wrong answers the round focuses on: any; exec_error (SQL failed to run); mismatch (ran but wrong result); rotate (alternate by round). A narrow target gives small patches that change few answers, which the fixed judge accepts at a lower bar",
 }
 
 
@@ -26,8 +24,14 @@ def knob(ctx: RoundContext, name: str):
     return (ctx.improver or {}).get(name, KNOBS[name][-1])
 
 
+# 이번 round에 겨냥할 오답 유형: any / exec_error / mismatch / rotate(round마다 번갈아).
+# 보통은 hooks/on_round_start.py가 round마다 골라 ctx.improver["target_error_class"]에 넣는다. 이 값은 SELF_SELECT=False일 때만 쓰인다.
+# KNOBS가 아닌 이유: make meta-eval은 on_round_start를 돌리지 않아, 이 값을 바꿔도 실제 round와 다른 효과를 재게 된다.
+TARGET_ERROR_CLASS = "any"
+
+
 def target(ctx: RoundContext) -> str:
-    t = knob(ctx, "target_error_class")
+    t = (ctx.improver or {}).get("target_error_class", TARGET_ERROR_CLASS)
     return ["exec_error", "mismatch"][ctx.seed % 2] if t == "rotate" else t
 
 
