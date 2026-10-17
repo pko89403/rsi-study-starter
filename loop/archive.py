@@ -43,7 +43,9 @@ class Archive:
         head, c = self.repo.head.commit, self.repo.commit(sha)
         if head.hexsha == c.hexsha:
             return
-        if self.repo.is_ancestor(head, c):
+        if self.repo.head.is_detached:   # branch 없음(옛 commit checkout 등): HEAD만 champion으로 옮긴다
+            self.repo.head.set_reference(c)
+        elif self.repo.is_ancestor(head, c):
             self.repo.head.reference.set_commit(c)
         else:   # HEAD가 그 사이에 움직였으면(참가자 commit 등) champion 내용을 HEAD 위에 새로 commit
             self.repo.git.checkout(sha, "--", *paths)
@@ -105,4 +107,7 @@ if __name__ == "__main__":   # python -m loop.archive : round commit은 branch �
     assert "h = 1" in A.repo.git.show(f"{c3}:h.py")                                              # round commit은 HEAD 위 (hook 유지)
     A.state["scores"].update({c3: 5}); A.promote(c3, ["a.py"])
     assert A.head() == c3 and g("status", "--porcelain") == ""
+    g("checkout", "-q", "--detach")                                                              # detached HEAD에서도 champion 이동이 멈추지 않음
+    (d / "a.py").write_text("x = 4\n"); c4 = A.commit("round 4", ["a.py"]); A.promote(c4, ["a.py"])
+    assert A.head() == c4 and A.repo.head.is_detached and g("status", "--porcelain") == ""
     print("archive ok")
