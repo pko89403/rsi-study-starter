@@ -20,7 +20,6 @@
 - `config.yaml` — `week`, `hook_changed`, `editable_blocks`
 - `methods/` 아래 새 모듈 (README §6의 A)
 - `loop/prompts/*.md`
-- `scripts/split_spec.yaml` — 3~8주차 담당자가 자기 주차 칸만 고쳐 PR. `data/` 재생성은 운영자만 한다
 
 ## 그 밖의 규칙
 
