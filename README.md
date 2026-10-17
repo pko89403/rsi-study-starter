@@ -26,6 +26,7 @@
 **설치**
 
 ```bash
+# macOS·Linux 기준. Windows는 WSL2 안에서 한다 (Makefile이 bash를 쓴다)
 # uv 없으면: brew install uv  (또는 curl -LsSf https://astral.sh/uv/install.sh | sh)
 make install                 # uv sync: .venv(Python 3.11) + pyproject.toml/uv.lock 의존성
 cp .env.example .env         # 열어서 아래 값을 채운다
@@ -315,7 +316,7 @@ def build_prompt(ctx):
 - 채택 여부는 본인이 정한다. 동료가 공유한 수정안은 `FILE=`로 내 환경에서 다시 잰다. 숫자를 합치지 않는다.
 - 비용: 상황 60개 기준 LLM 호출 약 5,000회, OpenRouter gpt-4.1-nano로 약 $1~2, 10~15분.
 - 모든 제안·판정·채택은 `logs/improver_ledger.jsonl`에 남는다.
-- 8주차: v0 값(`IMPROVER = {}`)을 `FILE=`로 넣고 새 seed(`SEED=`)로 한 번 더 잰다. 자기 수정이 실제로 효과가 있었는지 보는 지표다.
+- 8주차: `make meta-eval FILE=improver/v0.py SEED=9000`. 처음 방법(`improver/v0.py`, 손잡이 기본값)과 지금 방법을 짝 비교한다. 자기 수정이 실제로 효과가 있었는지 보는 지표다.
 
 ## 8. 결과 표
 

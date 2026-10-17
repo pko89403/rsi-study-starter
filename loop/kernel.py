@@ -14,7 +14,7 @@ FIXED_FILES = ["data/validation.json", "data/test.json", "data/fewshot_pool.json
                "loop/run.py", "loop/patch.py", "loop/archive.py", "loop/kernel.py", "loop/meta.py", "loop/context.py", "loop/env.py",
                ".claude/settings.json", "AGENTS.md", "CLAUDE.md", ".gemini/settings.json"]
 FIXED_DIRS = ["data/database"]   # 채점용 SQLite. 내용이 바뀌면 점수가 바뀐다
-RULER_TAG = "ruler-v10"   # 고정 파일의 기준 commit에 운영자가 단 tag. 고정 파일을 바꿀 때마다 번호를 올리고 `make ruler`
+RULER_TAG = "ruler-v11"   # 고정 파일의 기준 commit에 운영자가 단 tag. 고정 파일을 바꿀 때마다 번호를 올리고 `make ruler`
 RULER_STATUS = "unchecked"   # require_ruler() 결과: ok | override | skipped | changed. round·test·meta 기록에 남는다
 IMPROVER_FILE = "improver/incumbent.py"
 WIDE_MARGIN = 4   # 많은 답이 바뀐 patch(프롬프트 수정 등)의 최소 순증. placebo 보정 전 기본값

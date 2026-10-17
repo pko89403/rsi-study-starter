@@ -23,7 +23,9 @@
 
 ## 주차 시작 절차 (사용자가 "N주차 시작"이라고 하면 이 순서로 진행한다)
 
-1. `git pull`. 데이터나 채점이 바뀌었으면 loop가 이전 기록을 `logs/old-<sha>/`로 옮긴다 (손댈 것 없음).
+1. 지난 주 작업을 먼저 commit한다: `git add hooks methods config.yaml && git commit -m "week <N-1>: <method>"` (바뀐 게 없으면 건너뜀).
+   그다음 `git pull --no-rebase --no-edit`. 충돌이 나면 `hooks/`·`methods/`·`config.yaml`·`sql_agent/run.py`는 내 것을 유지한다 (`git checkout --ours <파일> && git add <파일>`), 그 밖은 origin 것을 쓴다.
+   데이터나 채점이 바뀌었으면 loop가 이전 기록을 `logs/old-<sha>/`로 옮긴다 (손댈 것 없음).
 2. `config.yaml`: `week: N`, `hook_changed`에 바꾼 hook 이름과 method 한 줄.
    - N ≥ 4이면 `editable_blocks: [prompt, code]` (이후 주차도 유지). 그 전에는 `[prompt]`.
    - 6주차도 블록은 그대로. `evaluator`는 넣지 않는다.
@@ -34,6 +36,8 @@
 4. `make check` (LLM 호출 없음). 실패하면 고친다.
 5. `make round` → `make test` → `make results W=N`. 결과 표 한 줄(README §8 7칸)의 초안을 사용자에게 보여 준다.
 6. 사용자가 원하면 `make meta-propose` → `make meta-eval`. 채택(`make meta-adopt`)은 사용자에게 묻고 한다.
+7. 8주차에는 추가로 `make meta-eval FILE=improver/v0.py SEED=9000` (처음 방법과 지금 방법 비교) 결과를 결과 표 7번째 칸에 적는다.
+8. 끝나면 이번 주 hook을 commit한다: `git add hooks methods config.yaml && git commit -m "week N: <method>"`.
 
 ## 그 밖의 규칙
 
