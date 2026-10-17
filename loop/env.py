@@ -21,7 +21,7 @@ def require_llm() -> None:
     load_env()
     if os.environ.get("LLM_BACKEND", "openai") == "mock":
         return
-    missing = [k for k in ("LLM_BASE_URL", "LLM_MODEL") if not os.environ.get(k)]
+    missing = [k for k in ("LLM_BASE_URL", "LLM_MODEL", "LLM_API_KEY") if not os.environ.get(k)]   # 로컬 LM Studio는 LLM_API_KEY=none
     if missing:
         sys.exit(f"환경 변수 {', '.join(missing)} 가 없습니다. starter/.env 파일에 적거나 export 하세요. (예: .env.example)")
     if "gpt-4.1-nano" not in os.environ["LLM_MODEL"]:   # Azure 배포 이름이 다르면 같은 모델이어도 뜬다. 막지는 않는다

@@ -38,12 +38,12 @@ def history(log: Path, choices: Path = CHOICES) -> list[tuple[str, float]]:
     if not (log.exists() and choices.exists()):
         return []
     rounds = {r["round"]: r for r in map(json.loads, filter(str.strip, log.read_text().splitlines()))}
-    out, ver = [], data_version()
+    ver, last = data_version(), {}
     for c in map(json.loads, filter(str.strip, choices.read_text().splitlines())):
-        r = rounds.get(c["round"]) if c.get("data") == ver else None
-        if r:   # 끝난 round만. 보상 = accept 1, 아니면 0
-            out.append((c["arm"], 1.0 if r.get("accepted") else 0.0))
-    return out
+        if c.get("data") == ver:
+            last[c["round"]] = c["arm"]   # 중단 뒤 같은 round를 다시 돌리면 마지막 선택만 센다
+    # 끝난 round만. 보상 = accept 1, 아니면 0
+    return [(arm, 1.0 if rounds[n].get("accepted") else 0.0) for n, arm in last.items() if n in rounds]
 
 
 def on_round_start(ctx: RoundContext) -> None:

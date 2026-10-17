@@ -9,6 +9,7 @@ check:   # LLM 비용 없이 설치를 확인: self-check + mock 2 round (별도
 	uv run python -m scripts.make_splits selfcheck
 	uv run python -m scripts.make_catalog selfcheck
 	@T=$$(mktemp -d) && git worktree add --detach --quiet "$$T" HEAD && \
+	cp -R hooks config.yaml "$$T"/ && cp -R loop/prompts "$$T"/loop/ && { [ ! -d methods ] || cp -R methods "$$T"/; } && \
 	(cd "$$T" && LLM_BACKEND=mock LLM_BASE_URL=x LLM_MODEL=mock RULER_OVERRIDE=1 uv run python -m loop.run --rounds 2); rc=$$?; \
 	git worktree remove --force "$$T"; \
 	exit $$rc
@@ -33,4 +34,4 @@ meta-eval:
 	uv run python -m loop.meta eval $(if $(FILE),--file $(FILE)) $(if $(N),--n $(N)) $(if $(SEED),--seed $(SEED))
 
 meta-adopt:
-	uv run python -m loop.meta adopt $(if $(FILE),--file $(FILE)) $(if $(FORCE),--force --reason "$(REASON)")
+	uv run python -m loop.meta adopt $(if $(FILE),--file $(FILE)) $(if $(filter 1 true yes,$(FORCE)),--force --reason "$(REASON)")

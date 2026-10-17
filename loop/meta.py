@@ -31,6 +31,8 @@ def log_ledger(rec: dict) -> None:
 
 
 def load(path: Path, schema: dict) -> dict:
+    if not Path(path).exists():
+        sys.exit(f"{path} 가 없습니다. 먼저 make meta-propose로 수정안을 만드세요.")
     values, errs = K.validate(K.read_improver(path), schema)
     if errs:
         print(f"{path}: {'; '.join(errs)} (기본값으로 채움)")
@@ -257,8 +259,7 @@ def adopt(archive, file: Path, force: bool, reason: str) -> None:
         sys.exit("FORCE 채택에는 REASON이 필요합니다")
     prev = K.improver_sha(load(Path(K.IMPROVER_FILE), schema))
     K.write_improver(ch, K.IMPROVER_FILE)
-    archive.repo.index.add([K.IMPROVER_FILE])
-    archive.repo.index.commit(f"meta: IMPROVER {prev} -> {sha} ({label}{', FORCE: ' + reason if force else ''})")
+    archive.repo.git.commit("-q", "--only", K.IMPROVER_FILE, "-m", f"meta: IMPROVER {prev} -> {sha} ({label}{', FORCE: ' + reason if force else ''})")   # 이 파일만 commit
     log_ledger({"type": "adopt", "challenger_sha": sha, "incumbent_sha": prev, "label": label, "force": force, "reason": reason})
     print(f"채택: IMPROVER {prev} -> {sha} ({label})")
 
