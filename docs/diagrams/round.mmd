@@ -1,0 +1,24 @@
+flowchart TB
+  BEGIN["begin<br/>① select_parent · parent 평가 (100문제)<br/>② on_round_start: 블록·오답 유형 자기 선택"]
+  D["diagnose ③<br/>틀린 문제 → 원인 한 줄"]
+  PR["propose<br/>④ build_prompt + ⑤ propose<br/>사전 검사 거부 시 재요청 최대 3"]
+  RV["review ⑥<br/>review_patch"]
+  AP["apply<br/>guard · 적용 · compile · git commit"]
+  SC["screen ⑦<br/>20문제 · after_screen"]
+  FU["full ⑧<br/>100문제 · accept AND kernel"]
+  AE["after_eval ⑨<br/>rounds.jsonl 한 줄"]
+  ST{"⑩ should_stop<br/>또는 마지막 round"}
+
+  BEGIN --> D --> PR
+  PR -->|통과| RV
+  RV -->|통과| AP
+  AP -->|통과| SC
+  SC -->|통과| FU
+  FU --> AE
+  PR -.->|거부| AE
+  RV -.->|거부| AE
+  AP -.->|거부| AE
+  SC -.->|거부| AE
+  AE --> ST
+  ST -->|아니오| BEGIN
+  ST -->|예| FIN([끝: champion으로 맞춤])

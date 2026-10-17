@@ -1,7 +1,7 @@
 """Improver LLM에 무엇을 줄지. 기본: 규칙 + 대상 블록 계약 + few-shot pool 예시 + 대상 블록 + 진단 + 틀린 문제 + 지난 log 5줄.
 
-KNOBS: 이 hook에서 Improver가 조절해도 되는 손잡이 (이름: (타입, 범위, 기본값)). 값은 ctx.improver로 들어온다.
-참가자가 method를 넣을 때 그 method의 손잡이를 여기에 더하면, Improver가 make meta-propose로 값을 다듬는다.
+KNOBS: 이 hook에서 Improver가 조절해도 되는 파라미터(KNOBS) (이름: (타입, 범위, 기본값)). 값은 ctx.improver로 들어온다.
+참가자가 method를 넣을 때 그 method의 파라미터를 여기에 더하면, Improver가 make meta-propose로 값을 다듬는다.
 """
 from __future__ import annotations
 import json, random
@@ -12,15 +12,15 @@ KNOBS = {
     "n_wrong": ("int", 3, 20, 10),       # 보여 줄 틀린 문제 수
     "show_pool": ("int", 0, 20, 12),     # 보여 줄 few-shot pool 후보 수
     "guidance": ("str", 400, ""),        # patch 작성 지침 한두 문장
-    # 3주차 Self-Refine (Madaan et al. 2023): 초안 patch → 피드백 → 수정. hooks/propose.py가 같은 손잡이를 읽는다.
-    # meta-eval은 build_prompt 출력 hash로 NULL을 판정하므로 손잡이는 여기 선언하고 prompt에도 반영한다.
+    # 3주차 Self-Refine (Madaan et al. 2023): 초안 patch → 피드백 → 수정. hooks/propose.py가 같은 파라미터를 읽는다.
+    # meta-eval은 build_prompt 출력 hash로 NULL을 판정하므로 파라미터는 여기 선언하고 prompt에도 반영한다.
     "refine_iters": ("int", 0, 3, 1),    # 피드백→수정 반복 수. 0이면 Self-Refine 끔 (v0와 같음)
     # 이전 실행(w3_selfrefine)에서 수정본이 길고 일반적인 지시문으로 수렴해 validation만 올랐으므로 길이·구체성 조건을 기본값에 넣는다.
     "critic_focus": ("str", 400, "Does the patch add only concrete rules taken from the wrong examples "
                                  "(exact columns asked, column order, execution errors, wrong joins)? Reject generic 'be correct / "
                                  "verify schema' wording. The system prompt must stay within 3 sentences; cut anything longer."),
 }
-KNOB_DOCS = {   # Improver LLM이 읽는 손잡이 설명
+KNOB_DOCS = {   # Improver LLM이 읽는 파라미터 설명
     "n_wrong": "how many wrong validation examples (question, predicted SQL, error) the patch prompt shows",
     "show_pool": "how many few-shot pool candidates (id, db, question) the patch prompt lists for choosing FEWSHOT_IDS",
     "guidance": "an instruction sentence added to the patch prompt telling the patch writer how to write patches",

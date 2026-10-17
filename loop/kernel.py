@@ -2,7 +2,7 @@
 
 - kernel_accept: 최종 accept 판정. hook accept와 AND로 묶여서 hook은 조건을 더 엄격하게만 할 수 있다.
 - anchors_sha: 고정 파일 hash. round마다 확인하고 바뀌면 loop가 멈춘다.
-- KNOBS: 참가자 hook이 선언한 손잡이(이름·타입·범위·기본값). Improver는 improver/incumbent.py의 IMPROVER 값만 바꾼다.
+- KNOBS: 참가자 hook이 선언한 파라미터(KNOBS)(이름·타입·범위·기본값). Improver는 improver/incumbent.py의 IMPROVER 값만 바꾼다.
 """
 from __future__ import annotations
 import ast, hashlib, json, os, subprocess, sys
@@ -118,7 +118,7 @@ def collect_knobs(modules) -> dict:
 
 
 def collect_docs(modules) -> dict:
-    """hook의 KNOB_DOCS = {이름: 무엇을 바꾸는 손잡이인지 한 줄}."""
+    """hook의 KNOB_DOCS = {이름: 무엇을 바꾸는 파라미터인지 한 줄}."""
     docs: dict = {}
     for m in modules:
         docs.update(getattr(m, "KNOB_DOCS", None) or {})
@@ -126,7 +126,7 @@ def collect_docs(modules) -> dict:
 
 
 def describe(spec: tuple) -> str:
-    """Improver LLM이 읽을 손잡이 명세."""
+    """Improver LLM이 읽을 파라미터 명세."""
     kind = spec[0]
     if kind in ("int", "float"):
         return f"{'integer' if kind == 'int' else 'number'} from {spec[1]} to {spec[2]} (default {spec[3]!r})"
@@ -194,7 +194,7 @@ def improver_sha(values: dict) -> str:
     return hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()[:8]
 
 
-if __name__ == "__main__":  # python -m loop.kernel : 판정·손잡이 확인 (LLM 없음)
+if __name__ == "__main__":  # python -m loop.kernel : 판정·파라미터 확인 (LLM 없음)
     import tempfile
     pp = lambda ok: {"per_problem": [{"id": f"q{i}", "correct": c} for i, c in enumerate(ok)]}
     db = {f"q{i}": f"db{i % 3}" for i in range(20)}

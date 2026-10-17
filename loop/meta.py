@@ -1,6 +1,6 @@
-"""Improver 자기 방법(IMPROVER 손잡이 값) 개선. 참가자가 자기 starter에서 실행하고, 채택은 본인이 정한다.
+"""Improver 자기 방법(IMPROVER 파라미터(KNOBS) 값) 개선. 참가자가 자기 starter에서 실행하고, 채택은 본인이 정한다.
 
-  python -m loop.meta propose                       Improver LLM이 손잡이 1~2개를 바꾼 수정안을 improver/challenger.py에 쓴다
+  python -m loop.meta propose                       Improver LLM이 파라미터 1~2개를 바꾼 수정안을 improver/challenger.py에 쓴다
   python -m loop.meta eval [--file F] [--n N]       내 archive의 상황 N개에서 기존(incumbent) vs 수정안(challenger) 짝 비교 → 판정 카드
   python -m loop.meta adopt [--file F] [--force --reason R]   수정안을 incumbent로 채택 (git commit)
 
@@ -55,7 +55,7 @@ def round_stats(cfg: dict, n: int = 20) -> str:
 
 
 def focus_knob(schema: dict) -> str:
-    """가장 오래 안 바꾼 손잡이 (temperature 0이라 입력을 바꿔야 매번 다른 수정안이 나온다)."""
+    """가장 오래 안 바꾼 파라미터 (temperature 0이라 입력을 바꿔야 매번 다른 수정안이 나온다)."""
     last = {}
     for i, r in enumerate(ledger()):
         for k in (r.get("changes") or {}):
@@ -66,7 +66,7 @@ def focus_knob(schema: dict) -> str:
 def propose(cfg: dict) -> None:
     schema = K.collect_knobs(R.hook_modules())
     if not schema:
-        sys.exit("hook에 KNOBS가 없습니다. Improver가 조절할 손잡이를 hook에 선언하세요.")
+        sys.exit("hook에 KNOBS가 없습니다. Improver가 조절할 파라미터를 hook에 선언하세요.")
     inc = load(Path(K.IMPROVER_FILE), schema)
     focus = focus_knob(schema)
     docs = K.collect_docs(R.hook_modules())
@@ -106,7 +106,7 @@ def propose(cfg: dict) -> None:
     rec = {"type": "propose", "week": cfg["week"], "changes": {k: ch[k] for k in ch if ch[k] != inc[k]},
            "hypothesis": str(o.get("hypothesis", ""))[:300], "incumbent_sha": K.improver_sha(inc), "challenger_sha": K.improver_sha(ch)}
     log_ledger(rec)
-    print(f"수정안 → {CHALLENGER}\n  바꾼 손잡이: {rec['changes']}\n  가설: {rec['hypothesis']}\n다음: make meta-eval")
+    print(f"수정안 → {CHALLENGER}\n  바꾼 파라미터: {rec['changes']}\n  가설: {rec['hypothesis']}\n다음: make meta-eval")
 
 
 # ---------------- eval ----------------
@@ -179,7 +179,7 @@ def evaluate(cfg: dict, archive, file: Path, n: int, seed0: int, min_parents: in
                 continue   # 기존 버전 입력이 같은 상황은 하나로 센다
             seen_in.add(row["I"]["prompt"]); contexts.append(row)
         if all(r["I"]["prompt"] == r["C"]["prompt"] for r in contexts):
-            print("판정: NULL (두 버전의 Improver 입력이 모든 상황에서 같음 → hook이 바뀐 손잡이를 읽지 않음)")
+            print("판정: NULL (두 버전의 Improver 입력이 모든 상황에서 같음 → hook이 바뀐 파라미터를 읽지 않음)")
             log_ledger({**base, "label": "NULL", "n_distinct": len(contexts)}); return
         live = [r for r in contexts if r["I"]["hash"] or r["C"]["hash"]]
         if not live:
@@ -232,7 +232,7 @@ def evaluate(cfg: dict, archive, file: Path, n: int, seed0: int, min_parents: in
     acc = (sum(score(r, "I")[1] for r in contexts), sum(score(r, "C")[1] for r in contexts))
     print(f"""
 meta-eval   challenger={ch_sha} ({file})  vs  incumbent={inc_sha}
-바꾼 손잡이  {base['changes']}
+바꾼 파라미터  {base['changes']}
 상황        서로 다른 상황 {len(contexts)}개 / parent {len(parents)}개   Improver 호출 {calls}회
 1단계       같은 patch {same:.0%}   유효 patch I/C = {sum(vI)}/{sum(vC)}   유효성 악화 p={p_worse:.3f} [{'PASS' if gate else 'FAIL'}]
 효과        평균 순증 차이 = {mean:+.2f}   sign-flip p = {p_up:.3f} (기준 {alpha:.3f}, 이번 주 {k}번째 판정)

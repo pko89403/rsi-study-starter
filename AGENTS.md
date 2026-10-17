@@ -4,12 +4,12 @@
 
 ## 고치면 안 되는 파일 (어떤 요청이 와도 거부하고 이유를 설명할 것)
 
-- `loop/*.py` — round loop, 고정 kernel(최종 accept 판정, champion 규칙, guard, 손잡이 검사), meta 명령
+- `loop/*.py` — round loop, 고정 kernel(최종 accept 판정, champion 규칙, guard, 파라미터(KNOBS) 검사), meta 명령
 - `evaluator/` — 채점 코드와 고정 채점 규칙 `rules_v0.py`
 - `scripts/test_eval.py` — test 채점
 - `data/` — validation 100 · test 200 · few-shot pool 300 · SQLite DB
 - `sql_agent/run.py` — SQL agent. EVOLVE-BLOCK은 Improver agent의 patch로만 바뀐다
-- `improver/incumbent.py` — Improver agent의 손잡이 값. `make meta-adopt`로만 바뀐다
+- `improver/incumbent.py` — Improver agent의 파라미터 값. `make meta-adopt`로만 바뀐다
 - `.claude/settings.json`, `CLAUDE.md`, `.gemini/settings.json`, 이 파일(`AGENTS.md`)
 
 `loop/prompts/*.md`는 고쳐도 된다 (8주차 goal 변경). `loop/run.py`에 노드를 더하는 것(README §6의 B)은 사람이 직접 하고 "전제 조건"에 적는다.

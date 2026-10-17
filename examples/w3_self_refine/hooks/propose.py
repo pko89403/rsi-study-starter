@@ -1,7 +1,7 @@
 """후보 patch를 어떻게 만들지. 3주차: Self-Refine (Madaan et al. 2023, arXiv 2303.17651).
 초안 patch → 같은 LLM이 구체적·실행 가능한 피드백 → 피드백과 이력을 붙여 다시 쓴다 (refine_iters회, VERDICT: OK면 조기 종료).
 반환 순서: 최신 수정본이 앞, 초안이 뒤. loop는 사전 검사를 통과한 첫 patch 하나만 평가하므로 수정본이 걸리면 초안이 쓰인다.
-손잡이(refine_iters, critic_focus)는 hooks/build_prompt.py의 KNOBS에 선언돼 있다 (meta-eval의 NULL 판정이 build_prompt 출력으로 결정되기 때문).
+파라미터(refine_iters, critic_focus)는 hooks/build_prompt.py의 KNOBS에 선언돼 있다 (meta-eval의 NULL 판정이 build_prompt 출력으로 결정되기 때문).
 비용: round당 LLM 호출 +2 × 반복 수 (피드백 1 + 수정 1)."""
 from __future__ import annotations
 from loop.context import RoundContext

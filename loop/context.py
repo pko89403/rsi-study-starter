@@ -25,7 +25,7 @@ class RoundContext:
     after: dict | None = None
     patch: object = None
     accepted: bool | None = None
-    improver: dict = field(default_factory=dict)   # IMPROVER 손잡이 값 (hook이 KNOBS로 선언, kernel이 검사한 값)
+    improver: dict = field(default_factory=dict)   # IMPROVER 파라미터(KNOBS) 값 (hook이 KNOBS로 선언, kernel이 검사한 값)
     seed: int = 0                                  # 오답 표본 순서 등 입력을 섞는 seed (loop: round 번호)
     llm_calls: int = 0                             # 이 ctx.llm으로 부른 횟수 (hook의 추가 호출 포함, 캐시 응답도 센다)
 

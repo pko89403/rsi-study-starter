@@ -1,0 +1,18 @@
+flowchart TB
+  S([질문 + DB 스키마]) --> SS
+  subgraph CODE["EVOLVE-BLOCK code · 4주차부터"]
+    SS["select_schema<br/>관련 테이블만 남김"]
+    G["generate<br/>LLM → SQL"]
+    R{"route<br/>fix 또는 END"}
+    F["fix<br/>오류 보고 SQL 다시"]
+  end
+  subgraph PROMPT["EVOLVE-BLOCK prompt"]
+    BM["build_messages<br/>SYSTEM_PROMPT · FEWSHOT_IDS"]
+  end
+  E["execute<br/>SQLite 실행 (고정)"]
+  SS --> G --> E --> R
+  R -->|fix| F --> E
+  R -->|END| O([예측 SQL])
+  BM -.-> G
+  BM -.-> F
+  M["MAX_FIX 5<br/>fix 상한 (고정)"] -.-> R

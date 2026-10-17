@@ -1,7 +1,7 @@
 """Improver LLM에 무엇을 줄지. 기본: 규칙 + 대상 블록 계약 + few-shot pool 예시 + 대상 블록 + 진단 + 틀린 문제 + 지난 log 5줄.
 
-KNOBS: 이 hook에서 Improver가 조절해도 되는 손잡이 (이름: (타입, 범위, 기본값)). 값은 ctx.improver로 들어온다.
-참가자가 method를 넣을 때 그 method의 손잡이를 여기에 더하면, Improver가 make meta-propose로 값을 다듬는다.
+KNOBS: 이 hook에서 Improver가 조절해도 되는 파라미터(KNOBS) (이름: (타입, 범위, 기본값)). 값은 ctx.improver로 들어온다.
+참가자가 method를 넣을 때 그 method의 파라미터를 여기에 더하면, Improver가 make meta-propose로 값을 다듬는다.
 """
 from __future__ import annotations
 import json, random
@@ -17,7 +17,7 @@ KNOBS = {
     "show_pool": ("int", 0, 20, 12),     # 보여 줄 few-shot pool 후보 수
     "guidance": ("str", 400, ""),        # patch 작성 지침 한두 문장
 }
-KNOB_DOCS = {   # Improver LLM이 읽는 손잡이 설명
+KNOB_DOCS = {   # Improver LLM이 읽는 파라미터 설명
     "n_shots": "how many earlier evaluated versions of the block (with scores, sorted low to high, current one included) the patch prompt shows; 1 = only the current block",
     "shot_temp": "softmax temperature for sampling which earlier versions to show: low = mostly the best-scoring ones, high = also low-scoring ones",
     "n_wrong": "how many wrong validation examples (question, predicted SQL, error) the patch prompt shows",
