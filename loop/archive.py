@@ -88,3 +88,21 @@ class Archive:
 
     def children_count(self, sha: str) -> int:
         return sum(1 for p in self.state["parents"].values() if p == sha)
+
+
+if __name__ == "__main__":   # python -m loop.archive : round commit은 branch 밖, champion이면 branch 이동 (LLM 없음)
+    import subprocess, tempfile
+    d = Path(tempfile.mkdtemp()); g = lambda *a: subprocess.run(["git", "-c", "commit.gpgsign=false", "-c", "user.email=t@t", "-c", "user.name=t", *a], cwd=d, check=True, capture_output=True, text=True).stdout
+    (d / "a.py").write_text("x = 0\n"); (d / "h.py").write_text("h = 0\n"); g("init", "-q"); g("add", "-A"); g("commit", "-qm", "v0")
+    A = Archive(d); v0 = A.head()
+    (d / "a.py").write_text("x = 1\n"); c1 = A.commit("round 1", ["a.py"])
+    assert A.head() == v0 and c1 != v0 and A.repo.commit(c1).parents[0].hexsha[:7] == v0          # branch는 그대로
+    A.checkout(v0, ["a.py"]); assert g("status", "--porcelain") == ""                             # 거부 뒤 작업 트리 깨끗
+    (d / "a.py").write_text("x = 2\n"); c2 = A.commit("round 2", ["a.py"])
+    A.promote(c2, ["a.py"]); assert A.head() == c2 and g("status", "--porcelain") == ""          # champion → fast-forward
+    (d / "h.py").write_text("h = 1\n"); g("commit", "-qam", "week 3 hook")                       # 참가자 commit으로 HEAD가 움직인 뒤
+    A.checkout(c1, ["a.py"]); (d / "a.py").write_text("x = 3\n"); c3 = A.commit("round 3", ["a.py"])
+    assert "h = 1" in A.repo.git.show(f"{c3}:h.py")                                              # round commit은 HEAD 위 (hook 유지)
+    A.state["scores"].update({c3: 5}); A.promote(c3, ["a.py"])
+    assert A.head() == c3 and g("status", "--porcelain") == ""
+    print("archive ok")
