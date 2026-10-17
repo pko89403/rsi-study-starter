@@ -108,7 +108,7 @@ make meta-eval               # 내 archive에서 기존 vs 수정안 짝 비교 
 make meta-adopt              # 수정안 채택 (본인이 정한다)
 ```
 
-- v0 기준값 (gpt-4.1-nano, `ruler-v8` 데이터): validation 67/100, test 약 138/200 (3회 138·139·138). 두 split의 v0 정답 비율이 같게 뽑았다.
+- v0 기준값 (gpt-4.1-nano): validation 67/100, test 약 138/200 (3회 138·139·138). 두 split의 v0 정답 비율이 같게 뽑았다.
 - 시간 (병렬 8): `make test` 약 1분 반, 1 round 약 30초, 20 round 약 10분. `make meta-eval` 10~15분.
 - `make` 없이 돌리려면 `uv run`을 붙인다. 예: `uv run python -m scripts.test_eval --runs 3`. venv activate는 필요 없다.
 - LLM 없이 loop 동작만 보려면 `LLM_BACKEND=mock`을 붙인다. 점수는 의미 없다.
@@ -157,6 +157,8 @@ flowchart TB
 | `hooks/*.py` | 결정 지점 10개. **매주 method는 이 중 하나의 본문을 바꾼다** | 각자 |
 | `data/test.json` | test. loop는 열지 않는다 | 아무도 |
 | `logs/rounds.jsonl` | round당 한 줄 | loop |
+| `logs/archive.json` | champion·점수·시도한 patch 기록. **지우지 않는다** (지우면 지금 commit에서 다시 시작해 champion 기록을 잃는다) | loop |
+| `refs/rsi/*` (git) | 평가한 patch commit. branch(HEAD)는 champion일 때만 움직여서, 거부된 patch가 내 commit·`git pull`에 섞이지 않는다 | loop |
 | `scripts/` | test 평가, 결과 표, Improver LLM 후보 측정(`probe_code_block`) | — |
 | `examples/` | 논문 메소드를 hook으로 구현해 실제로 돌려 본 예시(3·6·7·8주차)와 실측 결과 | 참고용 (복사해서 씀) |
 | `scripts/split_spec.yaml` | 고정 데이터를 만들 때 쓴 문제 유형 명세 (기록용, [wiki 데이터 구성](https://github.com/pko89403/rsi-study-starter/wiki/데이터-구성)) | 운영자 |
@@ -180,7 +182,7 @@ START → select_schema → generate → execute → route ─┬─ "fix" → f
 | `route` (분기 함수) | END로 갈지 fix로 갈지 | 항상 END (재시도 없음) | `code` 블록 |
 | `fix` | 오류를 보여 주고 SQL을 다시 받는다 | 안 불림 | `code` 블록 |
 
-- v0는 문제당 LLM 1회로 이전과 같은 점수를 낸다.
+- v0는 문제당 LLM 1회다.
 - `route`가 무엇을 내든 fix는 문제당 5회(`MAX_FIX`, 블록 밖)를 넘지 않는다.
 - 블록이 노드 이름을 빼먹으면 import 단계에서 실패하므로 guard가 거부한다.
 
@@ -228,7 +230,7 @@ flowchart TB
 ```
 parent = select_parent(archive)                 ① 어느 commit에서 시작하나        기본: champion
 checkout → before = 실행·평가(validation 100)      같은 commit은 다시 재지 않음
-on_round_start(ctx)                             ② round 시작 직후 할 일            기본: 없음
+on_round_start(ctx)                             ② round 시작 직후 할 일            기본: 블록·오답 유형 자기 선택
 ctx.diagnosis = diagnose(ctx)                   ③ 틀린 문제 → 원인 한 줄           기본: LLM 1회 (diagnose.md)
 patch = propose(ctx, build_prompt(ctx))         ④ 무엇을 보여 주고 ⑤ 후보를 어떻게   기본: LLM 1회, patch 1개
   평가 전 검사: 대상 블록이 맞나, 변경이 있나, 이미 시도한 patch인가, guard(AST)
@@ -287,7 +289,7 @@ hook 안에서 할 수 있는 것:
 
 고정 파일은 세 겹으로 지킨다.
 
-- **코딩 어시스턴트 차단:** `.claude/settings.json`이 Claude Code의 Edit/Write 도구로 고정 파일을 고치는 것을 막는다. 셸 명령(`sed -i`, 리다이렉션)까지 막지는 못한다. 2026-10-17 Claude Code 2.1.302에서 고정 파일 10곳 Edit/Write 차단, `hooks/`·`methods/` 허용을 확인했다. `AGENTS.md`(Codex·Gemini CLI가 읽음)에 같은 목록이 있다(권고).
+- **코딩 어시스턴트 차단:** `.claude/settings.json`이 Claude Code의 Edit/Write 도구로 고정 파일을 고치는 것을 막는다. 셸 명령(`sed -i`, 리다이렉션)까지 막지는 못한다. 고정 파일 10곳의 편집 차단과 `hooks/`·`methods/` 허용을 실제로 확인했다. `AGENTS.md`(Codex·Gemini CLI가 읽음)에 같은 목록이 있다(권고).
 - **실행 거부:** `make round`·`make test`·`make meta-*`는 시작할 때 고정 파일(채점용 SQLite 포함)을 origin의 `ruler-vN` tag와 비교한다. 다르면 실행하지 않는다. tag는 origin에서 자동으로 받아 온다.
   일부러 바꾼 경우(B)에만 `RULER_OVERRIDE=1 make round`로 돌리고, `rounds.jsonl`·test 결과·`improver_ledger.jsonl`에 `ruler: override`가 남는다. tag가 없으면 `ruler: skipped`로 남는다. 그 주 결과는 "전제 조건"에 적고 `make results`가 표시한다.
 - **기록:** 고정 파일 hash(`anchors_sha`)와 모델 id가 round마다, test 결과마다 남는다. `make round` 도중에 바뀌면 loop가 멈춘다.
@@ -306,7 +308,7 @@ round, parent, 대상 EVOLVE-BLOCK 내용, before 평가 결과(문제별 정오
 
 `config.yaml`의 `editable_blocks`에 블록 이름을 더하면 Improver agent가 그 블록을 고칠 수 있다.
 열린 블록은 round마다 돌아가며 대상이 된다. 이전 주에 연 블록은 닫지 않는다.
-`evaluator` 블록은 열어도 판정(`rules_v0`)에 영향이 없으므로 열지 않는다. 자기 평가 method는 `review_patch`·`accept` hook에 넣는다.
+`evaluator` 블록은 열어도 판정(`rules_v0`)에 영향이 없으므로 열지 않는다. 자기 평가 method는 `review_patch`·`after_screen` hook에 넣는다 (참고: `examples/w6_judge_screen_gain/`).
 
 주차별 예와 4주차 `code` 블록 예(노드 본문·`route`)는 위키 [주차별 로드맵](https://github.com/pko89403/rsi-study-starter/wiki/주차별-로드맵)에 있다.
 
@@ -427,6 +429,11 @@ def build_prompt(ctx):
 
 ## 9. 자주 막히는 곳
 
+- **`다른 make round / make meta-* 가 이 폴더에서 실행 중`**: 한 폴더에서는 한 번에 하나만 돈다. 앞의 실행이 끝난 뒤 다시 실행한다.
+- **`환경 변수 LLM_API_KEY 가 없습니다`**: `.env`에 키를 넣는다. 로컬 LM Studio면 `LLM_API_KEY=none`.
+- **`sql_agent/run.py ...가 champion(...)과 다릅니다`** (`make test`): `make round`가 중간에 끊긴 경우다. 안내된 `git checkout <champion> -- ...`를 실행한 뒤 다시 잰다.
+- **`make check`가 hook 오류로 실패**: commit하지 않은 `hooks/`·`config.yaml`도 검사한다. 오류 줄의 hook 파일을 고친다. KNOBS 형식이 틀리면 어느 hook의 어느 이름인지 알려 준다.
+- **`[setup] 경고: detached HEAD`** / **`[ruler] 경고: 더 새 기준`**: 옛 commit·tag를 checkout했거나 `git pull`을 안 했다. `git checkout main && git pull`.
 - **`고정 파일이 ruler-vN와 다름`**: 고정 파일을 고쳤거나 tag가 오래됐다. `git pull` 후 다시 돌린다. 일부러 바꾼 경우(아래 6의 B)만 `RULER_OVERRIDE=1`.
 - **`[env] LLM_MODEL=...: 평가 조건 3은 gpt-4.1-nano`**: `.env`의 모델을 확인한다. Azure 배포 이름이 달라서 뜬 것이면 무시해도 된다.
 - **`N/200 문제의 답이 비어 점수를 믿을 수 없다`** (`make test`): 키·모델·네트워크 오류이거나, 추론 모델이 `LLM_MAX_TOKENS`에 걸려 빈 답을 낸 것이다. 이 상태의 점수는 기록하지 않는다.
