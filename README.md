@@ -140,7 +140,7 @@ should_stop(ctx)                                ⑩ 일찍 멈출지            
 1. `config.yaml`에 `week`, 바꾼 hook 이름(`hook_changed`)을 적는다. 4주차부터 `editable_blocks: [prompt, code]`.
 2. `hooks/` 안의 함수 하나(또는 둘)의 본문을 바꾼다. 시그니처는 그대로 둔다.
    hook에 안 들어가는 method는 아래 6의 A·B·C를 따른다.
-3. method에서 Improver agent가 조절해도 되는 값은 `KNOBS`로 선언한다 (아래 7). 안 해도 된다.
+3. method에서 Improver agent가 조절해도 되는 값은 `KNOBS`로 선언한다 (아래 7). 안 해도 된다. `diagnose`·`build_prompt`·`propose`에서 읽는 값만 해당한다.
 4. `make check`
 5. `make round`
 6. `make test`, `make results W=N`으로 결과 표(아래 8)를 채운다.
@@ -278,6 +278,7 @@ def build_prompt(ctx):
 
 - 타입: `int`, `float`, `enum`(선택지 목록), `str`, `bool`. 범위 밖 값은 kernel이 기본값으로 되돌린다.
 - 값은 `knobs/incumbent.py`의 `IMPROVER = {...}`에 있다. 주차가 쌓이면 파라미터도 쌓인다.
+- `make meta-eval`은 `diagnose`·`build_prompt`·`propose` 세 hook만 실행한다. 다른 hook(`review_patch`, `after_eval`, `select_parent` 등)에서 읽는 값은 바꿔도 효과를 잴 수 없으므로 `KNOBS`가 아니라 hook 안 상수로 둔다. 선언해도 `make meta-propose`가 후보에서 빼고 알려 준다.
 - 명령은 위 1의 `make meta-propose` / `make meta-eval` / `make meta-adopt`. 판정이 ADOPT가 아니면 채택에 `FORCE=1 REASON="..."`가 필요하다.
 - 8주차: `make meta-eval FILE=knobs/v0.py SEED=9000`으로 처음 방법과 지금 방법을 짝 비교한다.
 

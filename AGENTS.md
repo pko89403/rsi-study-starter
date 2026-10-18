@@ -25,12 +25,13 @@
 
 1. 지난 주 작업을 먼저 commit한다: `git add -A && git commit -m "week <N-1>: <method>"` (바뀐 게 없으면 건너뜀).
    그다음 `git pull --no-rebase --no-edit`. 충돌이 나면 `hooks/`·`methods/`·`config.yaml`·`sql_agent/run.py`는 내 것을 유지한다 (`git checkout --ours <파일> && git add <파일>`), 그 밖은 origin 것을 쓴다.
+   `hooks/`·`methods/` 파일을 내 것으로 유지했으면, 그 전에 운영자가 그 파일에서 바꾼 부분(`git diff HEAD...MERGE_HEAD -- <파일>`)을 사용자에게 보여 주고 내 코드에 합칠지 묻는다. 묻지 않고 넘어가면 운영자의 수정이 빠진다.
    데이터나 채점이 바뀌었으면 loop가 이전 기록을 `logs/old-<sha>/`로 옮긴다 (손댈 것 없음).
 2. `config.yaml`: `week: N`, `hook_changed`에 바꾼 hook 이름과 method 한 줄.
    - N ≥ 4이면 `editable_blocks: [prompt, code]` (이후 주차도 유지). 그 전에는 `[prompt]`.
    - 6주차도 블록은 그대로다.
 3. 사용자가 준 method(주차 페이지 발제 노트 7번)를 `hooks/`에 구현한다. 함수 시그니처는 유지한다.
-   - 조절할 값은 `KNOBS`와 `KNOB_DOCS`로 선언한다 (README §7). 지난 주 hook과 같은 파일이면 합쳐서 둘 다 살린다.
+   - 조절할 값은 `KNOBS`와 `KNOB_DOCS`로 선언한다 (README §7). `diagnose`·`build_prompt`·`propose` hook의 값만 선언하고, 다른 hook의 값은 hook 안 상수로 둔다. 지난 주 hook과 같은 파일이면 합쳐서 둘 다 살린다.
    - 6주차(자기 평가)는 `hooks/review_patch.py`나 `hooks/after_screen.py`에 넣는다. 참고 구현: `examples/`.
    - 어느 블록·오답 유형을 겨냥할지는 `hooks/on_round_start.py`가 자기 기록으로 고른다. 따로 정하지 않는다.
 4. `make check` (LLM 호출 없음). 실패하면 고친다.

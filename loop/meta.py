@@ -65,14 +65,29 @@ def focus_knob(schema: dict) -> str:
     return min(schema, key=lambda k: (last.get(k, -1), k))
 
 
+# meta-eval이 실제로 실행하는 hook. 다른 hook의 KNOBS는 값을 바꿔도 Improver 입력이 같아 판정이 늘 NULL이다.
+MEASURED_HOOKS = ("hooks.diagnose", "hooks.build_prompt", "hooks.propose")
+
+
+def measurable(mods) -> tuple[dict, list[str]]:
+    """(수정안 후보로 쓸 KNOBS, meta-eval이 잴 수 없어 뺀 이름)."""
+    every = K.collect_knobs(mods)
+    ok = K.collect_knobs([m for m in mods if m.__name__ in MEASURED_HOOKS])
+    return ok, sorted(set(every) - set(ok))
+
+
 def propose(cfg: dict) -> None:
     schema = K.collect_knobs(R.hook_modules())
-    if not schema:
-        sys.exit("hook에 KNOBS가 없습니다. Improver가 조절할 파라미터를 hook에 선언하세요.")
+    tunable, skipped = measurable(R.hook_modules())
+    if skipped:
+        print(f"[meta] {', '.join(skipped)}: meta-eval이 실행하지 않는 hook(diagnose·build_prompt·propose 밖)의 파라미터라 수정안 후보에서 뺍니다. "
+              "그 값은 hook 안 상수로 두세요 (README 7).")
+    if not tunable:
+        sys.exit("수정안을 낼 파라미터가 없습니다. diagnose·build_prompt·propose hook에 KNOBS를 선언하세요.")
     inc = load(Path(K.IMPROVER_FILE), schema)
-    focus = focus_knob(schema)
+    focus = focus_knob(tunable)
     docs = K.collect_docs(R.hook_modules())
-    rows = "\n".join(f"- {k}: {docs.get(k, '(no description)')}. Value: {K.describe(spec)}. Current: {inc[k]!r}" for k, spec in schema.items())
+    rows = "\n".join(f"- {k}: {docs.get(k, '(no description)')}. Value: {K.describe(spec)}. Current: {inc[k]!r}" for k, spec in tunable.items())
     past = "\n".join(f"- {r.get('changes')} -> {r.get('label', 'proposed')}" for r in ledger()[-8:] if r.get("changes")) or "(none)"
     msgs = [{"role": "system", "content":
              "You tune the improvement method of an Improver agent that patches a Text-to-SQL agent. Its method has knobs "
@@ -92,6 +107,8 @@ def propose(cfg: dict) -> None:
             changes = None
         if not changes:
             why = "answer was not the requested JSON"
+        elif set(changes) - set(tunable):
+            why = f"unknown knob(s) {sorted(set(changes) - set(tunable))}; use only the listed knobs"
         else:
             ch, errs = K.validate({**inc, **changes}, schema)
             if errs:
@@ -181,7 +198,7 @@ def evaluate(cfg: dict, archive, file: Path, n: int, seed0: int, min_parents: in
                 continue   # 기존 버전 입력이 같은 상황은 하나로 센다
             seen_in.add(row["I"]["prompt"]); contexts.append(row)
         if all(r["I"]["prompt"] == r["C"]["prompt"] for r in contexts):
-            print("판정: NULL (두 버전의 Improver 입력이 모든 상황에서 같음 → hook이 바뀐 파라미터를 읽지 않음)")
+            print("판정: NULL (두 버전의 Improver 입력이 모든 상황에서 같음 → 바뀐 파라미터를 diagnose·build_prompt·propose가 읽지 않음)")
             log_ledger({**base, "label": "NULL", "n_distinct": len(contexts)}); return
         live = [r for r in contexts if r["I"]["hash"] or r["C"]["hash"]]
         if not live:
@@ -287,6 +304,11 @@ if __name__ == "__main__":
         assert sign_flip_p([0, 0]) == 1.0 and sign_flip_p([-1, -1, -1]) == 1.0
         assert abs(binom_tail(3, 3) - 0.125) < 1e-12 and binom_tail(0, 0) == 1.0
         assert 0 < sign_flip_p([1] * 30 + [-1] * 10) < 0.01
+        import types
+        mk = lambda name, knobs: types.SimpleNamespace(__name__=name, KNOBS=knobs)
+        ok, skip = measurable([mk("hooks.build_prompt", {"n": ("int", 1, 9, 3)}), mk("hooks.review_patch", {"cut": ("int", 0, 9, 5)})])
+        assert list(ok) == ["n"] and skip == ["cut"]                                      # 잴 수 없는 hook의 KNOBS는 후보에서 뺀다
+        assert {m.__name__ for m in R.hook_modules()} >= set(MEASURED_HOOKS)
         print("meta ok")
     else:
         main()
