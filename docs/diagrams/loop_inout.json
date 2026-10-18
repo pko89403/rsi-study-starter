@@ -1,0 +1,200 @@
+{
+ "schema_version": 1,
+ "diagram_type": "architecture",
+ "meta": {
+  "title": "평가자(loop 안)와 측정(loop 바깥)",
+  "locale": "ko",
+  "output": "loopio/loop-inout2.html",
+  "quality_profile": "showcase",
+  "repository": {
+   "url": "https://github.com/pko89403/rsi-study-starter.git",
+   "provider": "github",
+   "link_mode": "web",
+   "revision": "547608023ae6804db50b0deadfb994444dd6eb2b"
+  }
+ },
+ "components": [
+  {
+   "id": "llm",
+   "type": "cloud",
+   "label": "Improver LLM",
+   "sublabel": "진단하고 patch를 냄",
+   "pos": [
+    40,
+    40
+   ],
+   "size": [
+    180,
+    64
+   ],
+   "sources": [
+    {
+     "path": "hooks/propose.py",
+     "line": 7
+    }
+   ]
+  },
+  {
+   "id": "sqlagent",
+   "type": "backend",
+   "label": "SQL agent",
+   "sublabel": "patch 적용 · validation 풀이",
+   "pos": [
+    340,
+    40
+   ],
+   "size": [
+    200,
+    64
+   ],
+   "sources": [
+    {
+     "path": "sql_agent/run.py",
+     "line": 53,
+     "end_line": 105
+    }
+   ]
+  },
+  {
+   "id": "evaluator",
+   "type": "security",
+   "label": "평가자",
+   "sublabel": "실행 결과로 채점 · rules_v0",
+   "pos": [
+    340,
+    200
+   ],
+   "size": [
+    200,
+    64
+   ],
+   "sources": [
+    {
+     "path": "evaluator/evaluate.py",
+     "line": 29
+    },
+    {
+     "path": "evaluator/rules_v0.py",
+     "line": 11
+    }
+   ]
+  },
+  {
+   "id": "kernel",
+   "type": "security",
+   "label": "고정 kernel",
+   "sublabel": "문제별 짝 비교 · accept/거부",
+   "pos": [
+    340,
+    360
+   ],
+   "size": [
+    200,
+    64
+   ],
+   "sources": [
+    {
+     "path": "loop/kernel.py",
+     "line": 84,
+     "end_line": 102
+    }
+   ]
+  },
+  {
+   "id": "test",
+   "type": "external",
+   "label": "make test",
+   "sublabel": "test 200 × 3회 · loop에 안 넣음",
+   "pos": [
+    700,
+    360
+   ],
+   "size": [
+    200,
+    64
+   ],
+   "sources": [
+    {
+     "path": "scripts/test_eval.py",
+     "line": 1,
+     "end_line": 47
+    }
+   ]
+  }
+ ],
+ "boundaries": [
+  {
+   "kind": "region",
+   "label": "loop 안 · 매 round 자동 (평가자, 4절)",
+   "wraps": [
+    "llm",
+    "sqlagent",
+    "evaluator",
+    "kernel"
+   ]
+  },
+  {
+   "kind": "region",
+   "label": "loop 바깥 · 매주 사람 (측정, 5절)",
+   "wraps": [
+    "test"
+   ]
+  }
+ ],
+ "connections": [
+  {
+   "id": "patch",
+   "from": "llm",
+   "to": "sqlagent",
+   "label": "patch"
+  },
+  {
+   "id": "pred",
+   "from": "sqlagent",
+   "to": "evaluator",
+   "label": "예측 SQL"
+  },
+  {
+   "id": "judge",
+   "from": "evaluator",
+   "to": "kernel",
+   "label": "문제별 정답"
+  },
+  {
+   "id": "next",
+   "from": "kernel",
+   "to": "llm",
+   "label": "다음 round (champion에서)",
+   "variant": "dashed",
+   "fromSide": "left",
+   "toSide": "bottom"
+  },
+  {
+   "id": "measure",
+   "from": "kernel",
+   "to": "test",
+   "label": "champion commit",
+   "variant": "emphasis"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "4절의 평가자 (loop 안)",
+   "items": [
+    "이번 patch가 나아졌는지 loop 안에서 판단한다 (고정 채점 rules_v0)",
+    "파라미터(KNOBS) 수정안을 재는 meta-eval도 같은 validation 채점을 쓴다",
+    "다음 round는 select_parent가 고른 commit(기본: champion)에서 시작한다"
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "5절의 측정 (loop 바깥)",
+   "items": [
+    "loop가 본 적 없는 test 200문제를 3회 재어 평균한다",
+    "test 결과는 loop에 넣지 않는다 (사람도 method 선택에 쓰지 않음)",
+    "validation만 오르고 test가 그대로면 평가자에게만 맞춘 것 (self-confirming loop)"
+   ]
+  }
+ ]
+}

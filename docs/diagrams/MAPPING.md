@@ -8,5 +8,6 @@
 | `sql_agent.json` | `docs/sql_agent.png` | README 맨 위 (SQL agent graph) |
 | `round.json` | `docs/round.png` | README 3 (한 round) |
 | `week.json` | `docs/week.png` | 위키 주차별-로드맵 (한 주) |
+| `loop_inout.json` | `docs/loop_inout.png` | Notion OT "Abstract 풀어 읽기" 5번 (평가자는 loop 안, 측정은 loop 바깥) |
 
 다시 그리기: `node <archify>/bin/archify.mjs finalize <architecture|workflow> docs/diagrams/X.json out.html --repo-root . --quality showcase` 뒤 HTML의 그림을 PNG로 저장한다.
