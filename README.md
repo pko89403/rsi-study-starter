@@ -62,7 +62,7 @@ make meta-eval               # 내 archive에서 기존 vs 수정안 짝 비교 
 make meta-adopt              # 수정안 채택 (본인이 정한다)
 ```
 
-- v0 기준값 (gpt-4.1-nano): validation 67/100, test 약 138/200 (3회 138·139·138). 두 split의 v0 정답 비율이 같게 뽑았다.
+- v0 기준값 (gpt-4.1-nano): validation 67~70/100, test 138~140/200 (3회 평균). temperature 0이어도 실행마다 이 정도 흔들린다. 두 split의 v0 정답 비율이 같게 뽑았다.
 - 시간 (병렬 8): `make test` 약 1분 반, 1 round 약 30초, 20 round 약 10분. `make meta-eval` 10~15분.
 - `make` 없이 돌리려면 `uv run`을 붙인다. 예: `uv run python -m scripts.test_eval --runs 3`. venv activate는 필요 없다.
 - LLM 없이 loop 동작만 보려면 `LLM_BACKEND=mock`을 붙인다. 점수는 의미 없다.
