@@ -1,5 +1,5 @@
 rounds: 20
-week: 0                  # 주차 번호. 매주 참가자가 바꾼다 (결과 표·meta 판정이 주차별로 묶인다)
+week: 3                  # 주차 번호. 매주 참가자가 바꾼다 (결과 표·meta 판정이 주차별로 묶인다)
 validation: data/validation.json
 fewshot_pool: data/fewshot_pool.json
 tables: data/tables.json
@@ -16,6 +16,6 @@ improver_max_tokens: 4096   # Improver LLM 출력 상한(진단·patch). 7B 정�
 editable_blocks: [prompt]    # Improver가 고칠 수 있는 SQL agent 블록
 evolve_files: [sql_agent/run.py]   # 블록이 들어 있는 파일
 log: logs/rounds.jsonl
-hook_changed: none       # 이번 주에 바꾼 hook 이름 (결과 표용)
+hook_changed: "select_parent: DGM open-ended exploration (archive 전체에서 확률 선택)" # 이번 주에 바꾼 hook 이름 (결과 표용)
 meta_contexts: 60        # make meta-eval이 만드는 서로 다른 상황 수
 meta_min_parents: 3      # 서로 다른 parent가 이보다 적으면 판정 보류
