@@ -19,6 +19,7 @@ def select_parent(archive: Archive) -> str:
         return archive.best or archive.head()
     # parent와 100문제 SQL이 모두 같은 자식(kernel_accept의 changed == 0)은 parent의 복제본이라 뺀다
     clones = {e["commit"] for e in entries if e.get("commit") and e.get("changed") == 0}
+    # shortcut: promote가 만든 "champion <sha>" 복사 commit은 원본과 따로 후보가 된다, 참가자 commit 뒤 champion이 바뀌는 일이 잦으면 합칠 것
     cands = [s for s in scores if s not in clones]
     top = sorted((scores[s] for s in cands), reverse=True)[:CENTER_TOP]
     center = sum(top) / len(top) / N_PROBLEMS if CENTER_TOP else 0.5
