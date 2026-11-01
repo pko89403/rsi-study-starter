@@ -51,7 +51,7 @@ def try_sql(db_id: str, sql: str, limit: int = 5, timeout: float = SQL_TIMEOUT) 
         return {"ok": False, "rows": [], "error": f"{type(e).__name__}: {e}"[:200]}
 
 # === EVOLVE-BLOCK-START: prompt ===
-SYSTEM_PROMPT = "You are a Text-to-SQL assistant for SQLite. Answer with one SQL query only, no explanation."
+SYSTEM_PROMPT = "You are a Text-to-SQL assistant for SQLite. Generate a correct SQL query that answers the question based on the provided schema. Use only the column names present in the schema, and do not assume any columns not listed. Answer with one SQL query only, no explanation."
 FEWSHOT_IDS: list[str] = []   # data/fewshot_pool.json 의 id. 비어 있으면 few-shot 없음.
 
 
