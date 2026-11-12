@@ -11,7 +11,7 @@ from loop.context import RoundContext
 
 ARMS = ["any", "exec_error", "mismatch"]   # 겨냥할 오답 유형. 선택지 하나 = "블록:유형" (예: "code:exec_error")
 # KNOBS가 아닌 이유: make meta-eval은 round 시작(on_round_start)을 재현하지 않아 이 값의 효과를 잴 수 없다 (판정이 늘 NULL).
-SELF_SELECT = True
+SELF_SELECT = False   # 4주차: True면 week 3 기록 때문에 UCB1이 처음 보는 code만 골라 prompt round가 0이었다 (r51~70)
 CHOICES = Path("logs/self_select.jsonl")   # round마다 고른 값. rounds.jsonl과 round 번호로 이어 보상(accept 여부)을 센다
 
 
