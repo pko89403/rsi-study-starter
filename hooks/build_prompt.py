@@ -45,12 +45,18 @@ def target_wrong(ctx: RoundContext) -> list[dict]:
     return pick or wrong
 
 CONTRACTS = {
-    "prompt": """Block 'prompt' (sql_agent/run.py). How it is used by code outside the block, which you cannot change:
-- FEWSHOT_IDS: list of ids from data/fewshot_pool.json. The outside code loads them and passes them to
-  build_messages(question, schema, fewshot) as `fewshot`: a list of dicts with keys "question", "schema", "sql".
-  You do NOT need to read any file. Never use open(), os, subprocess, or imports inside the block.
-- build_messages must return a list of chat messages (dicts with "role" and "content").
-- The model answering is small; keep the prompt short and concrete.""",
+    # shortcut: 이 문구는 review_patch.SKILL_ONLY=True 기준이다, SKILL_ONLY를 끄면 SYSTEM_PROMPT·build_messages 계약을 다시 쓸 것
+    "prompt": """Block 'prompt' (sql_agent/run.py). In this experiment you can change only the skill list SKILLS.
+- Write your patch as one line, the full new list:
+      SKILLS = [{"when": ["phrase", "other phrase"], "rule": "what the SQL agent must do for such questions"}]
+  The loop keeps only this list. It ignores every other change (SYSTEM_PROMPT, build_messages, FEWSHOT_IDS stay as they are).
+- A skill adds its rule to the system message only for questions whose lowercase text contains one of its "when" phrases,
+  so other answers stay unchanged.
+- Take the phrases from the wrong questions below, and choose words that mark a type of question (for example "average", "for each",
+  "more than"). Do not use words that most questions contain, and do not copy a whole question.
+- The rule must say what to do in SQL for that type of question. Do not repeat what SYSTEM_PROMPT already says.
+- If the current block has SKILLS, write the full new list: keep the skills that help, change or remove the others, add new ones.
+- The model answering is small; keep each rule short and concrete.""",
     "code": """Block 'code' (sql_agent/run.py): the bodies of the SQL agent's graph nodes. The wiring is FIXED outside the block:
   START -> select_schema -> generate -> execute -> route -> ("fix" -> execute again | END)
 - Keep these top-level names: MAX_ATTEMPTS (int), select_schema(s), generate(s), fix(s), route(s).
@@ -88,5 +94,6 @@ def build_prompt(ctx: RoundContext) -> list[dict]:
                "(examples below). Make the smallest change that fixes them; do not rewrite unrelated instructions, so correct answers stay correct.\n\n"
                if target(ctx) != "any" else "")
             + f"{_pool_samples(ctx, knob(ctx, 'show_pool'))}\n\nWrong examples:\n{wrong_txt}\n\nRecent rounds:\n{log_txt or '(none)'}\n\n"
-            f"Current block '{b}':\n<<<CURRENT_BLOCK {b}>>>\n{ctx.block}\n<<<END_BLOCK>>>")
+            + "".join(f"Other block '{o}' (read-only context, do not patch it):\n{src}\n\n" for o, src in (ctx.blocks or {}).items() if o != b)
+            + f"Current block '{b}':\n<<<CURRENT_BLOCK {b}>>>\n{ctx.block}\n<<<END_BLOCK>>>")
     return [{"role": "system", "content": ctx.prompt_text("patch.md")}, {"role": "user", "content": user}]
