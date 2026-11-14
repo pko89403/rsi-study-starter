@@ -4,7 +4,7 @@ KNOBS: 이 hook에서 Improver가 조절해도 되는 파라미터(KNOBS) (이�
 참가자가 method를 넣을 때 그 method의 파라미터를 여기에 더하면, Improver가 make meta-propose로 값을 다듬는다.
 """
 from __future__ import annotations
-import json, random
+import ast, json, random
 from pathlib import Path
 from loop.context import RoundContext
 
@@ -45,8 +45,15 @@ def target_wrong(ctx: RoundContext) -> list[dict]:
     return pick or wrong
 
 CONTRACTS = {
-    # shortcut: 이 문구는 review_patch.SKILL_ONLY=True 기준이다, SKILL_ONLY를 끄면 SYSTEM_PROMPT·build_messages 계약을 다시 쓸 것
-    "prompt": """Block 'prompt' (sql_agent/run.py). In this experiment you can change only the skill list SKILLS.
+    "prompt": """Block 'prompt' (sql_agent/run.py). How it is used by code outside the block, which you cannot change:
+- FEWSHOT_IDS: list of ids from data/fewshot_pool.json. The outside code loads them and passes them to
+  build_messages(question, schema, fewshot) as `fewshot`: a list of dicts with keys "question", "schema", "sql".
+  You do NOT need to read any file. Never use open(), os, subprocess, or imports inside the block.
+- build_messages must return a list of chat messages (dicts with "role" and "content").
+- This round you change SYSTEM_PROMPT, FEWSHOT_IDS or build_messages. The skill list SKILLS and the code that applies it
+  are kept by the loop as they are: do not write them.
+- The model answering is small; keep the prompt short and concrete.""",
+    "skills": """Block 'prompt' (sql_agent/run.py). This round you can change only the skill list SKILLS.
 - Write your patch as one line, the full new list:
       SKILLS = [{"when": ["phrase", "other phrase"], "rule": "what the SQL agent must do for such questions"}]
   The loop keeps only this list. It ignores every other change (SYSTEM_PROMPT, build_messages, FEWSHOT_IDS stay as they are).
@@ -69,6 +76,39 @@ CONTRACTS = {
 }
 
 
+# 4주차 4b: prompt 블록 하나 안에서 SKILLS와 나머지(SYSTEM_PROMPT·FEWSHOT_IDS·build_messages)를 round마다 번갈아 고친다.
+# sql_agent/run.py는 고정이라 블록을 새로 만들 수 없다. 홀수 round = SKILLS만, 짝수 round = 나머지만. review_patch가 이 나눔을 강제한다.
+ALTERNATE = True
+
+
+def aspect(ctx: RoundContext) -> str:
+    """prompt 블록에서 이번 round에 고칠 부분: "skills" 또는 "prompt". ALTERNATE=False면 늘 "prompt"."""
+    return "skills" if ALTERNATE and ctx.block_name == "prompt" and ctx.round % 2 == 1 else "prompt"
+
+
+def split_block(src: str) -> tuple[str, str | None]:
+    """prompt 블록을 (나머지, 마지막 SKILLS 정의 줄)로 나눈다. SKILLS 적용 wrapper(_base_build_messages)는 버리고,
+    build_messages가 여러 번 정의돼 있으면 마지막 것만 남긴다. SyntaxError는 호출한 쪽이 처리한다."""
+    lines, drop, skills, defs = src.splitlines(), set(), None, []
+    for n in ast.parse(src).body:
+        span = set(range(n.lineno - 1, n.end_lineno))
+        target = n.targets[0] if isinstance(n, ast.Assign) else n.target if isinstance(n, ast.AnnAssign) else None
+        name = target.id if isinstance(target, ast.Name) else None
+        if name == "SKILLS":
+            skills = "\n".join(lines[n.lineno - 1:n.end_lineno]); drop |= span
+        elif name == "_base_build_messages":
+            drop |= span
+        elif isinstance(n, ast.FunctionDef) and n.name == "build_messages":
+            if any(isinstance(x, ast.Name) and x.id == "_base_build_messages" for x in ast.walk(n)):
+                drop |= span
+            else:
+                defs.append(span)
+    for span in defs[:-1]:
+        drop |= span
+    core = "\n".join(l for i, l in enumerate(lines) if i not in drop)
+    return core.strip("\n"), skills
+
+
 def _pool_samples(ctx: RoundContext, n: int) -> str:
     if n == 0:
         return "few-shot pool: (not shown)"
@@ -86,14 +126,23 @@ def build_prompt(ctx: RoundContext) -> list[dict]:
     wrong_txt = "\n".join(f"- {ctx.problem(p['id'])['question']}\n  predicted: {ctx.prediction(p['id'])}\n  error: {p['error']}" for p in wrong)
     log_txt = "\n".join(json.dumps({k: r.get(k) for k in ("round", "block", "reason", "accepted", "rejected_by", "net")}) for r in ctx.recent_log)
     b = ctx.block_name
+    a = aspect(ctx)
+    contract = CONTRACTS["skills"] if a == "skills" else CONTRACTS.get(b, f"Block {b!r}")
+    shown = ctx.block
+    if b == "prompt" and ALTERNATE:
+        try:
+            core, skills = split_block(ctx.block)
+            shown = (core if a == "prompt" else ctx.block) + (f"\n\n# kept by the loop this round (read-only):\n{skills}" if a == "prompt" and skills else "")
+        except SyntaxError:
+            pass
     guidance = knob(ctx, "guidance")
     user = (f"Validation score: {ctx.before['correct']}/{ctx.before['n']}\nDiagnosis: {ctx.diagnosis}\n\n"
-            f"This round, patch block '{b}' (BLOCK: {b}).\n\n{CONTRACTS.get(b, f'Block {b!r}')}\n\n"
+            f"This round, patch block '{b}' (BLOCK: {b}).\n\n{contract}\n\n"
             + (f"Guidance: {guidance}\n\n" if guidance else "")
             + (f"Focus: fix only the {'SQL that fails to run' if target(ctx) == 'exec_error' else 'SQL that runs but returns the wrong result'} "
                "(examples below). Make the smallest change that fixes them; do not rewrite unrelated instructions, so correct answers stay correct.\n\n"
                if target(ctx) != "any" else "")
             + f"{_pool_samples(ctx, knob(ctx, 'show_pool'))}\n\nWrong examples:\n{wrong_txt}\n\nRecent rounds:\n{log_txt or '(none)'}\n\n"
             + "".join(f"Other block '{o}' (read-only context, do not patch it):\n{src}\n\n" for o, src in (ctx.blocks or {}).items() if o != b)
-            + f"Current block '{b}':\n<<<CURRENT_BLOCK {b}>>>\n{ctx.block}\n<<<END_BLOCK>>>")
+            + f"Current block '{b}':\n<<<CURRENT_BLOCK {b}>>>\n{shown}\n<<<END_BLOCK>>>")
     return [{"role": "system", "content": ctx.prompt_text("patch.md")}, {"role": "user", "content": user}]
