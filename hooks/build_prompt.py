@@ -77,13 +77,16 @@ CONTRACTS = {
 
 
 # 4주차 4b: prompt 블록 하나 안에서 SKILLS와 나머지(SYSTEM_PROMPT·FEWSHOT_IDS·build_messages)를 round마다 번갈아 고친다.
-# sql_agent/run.py는 고정이라 블록을 새로 만들 수 없다. 홀수 round = SKILLS만, 짝수 round = 나머지만. review_patch가 이 나눔을 강제한다.
+# sql_agent/run.py는 고정이라 블록을 새로 만들 수 없다. prompt round를 번갈아 SKILLS만 / 나머지만 고친다 (aspect). review_patch가 이 나눔을 강제한다.
 ALTERNATE = True
 
 
 def aspect(ctx: RoundContext) -> str:
-    """prompt 블록에서 이번 round에 고칠 부분: "skills" 또는 "prompt". ALTERNATE=False면 늘 "prompt"."""
-    return "skills" if ALTERNATE and ctx.block_name == "prompt" and ctx.round % 2 == 1 else "prompt"
+    """prompt 블록에서 이번 round에 고칠 부분: "skills" 또는 "prompt". ALTERNATE=False면 늘 "prompt".
+    loop는 열린 블록을 round마다 돌린다 (editable[(round-1) % n]). prompt round의 순번 (round-1)//n의 홀짝으로 나눠야
+    블록이 2개일 때도 SKILLS와 나머지가 번갈아 온다 (round 홀짝으로 나누면 prompt round가 늘 같은 쪽만 받는다)."""
+    n = len(((getattr(ctx, "config", None) or {}).get("editable_blocks")) or ["prompt"])
+    return "skills" if ALTERNATE and ctx.block_name == "prompt" and ((ctx.round - 1) // n) % 2 == 0 else "prompt"
 
 
 def split_block(src: str) -> tuple[str, str | None]:

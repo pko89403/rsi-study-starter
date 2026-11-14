@@ -11,7 +11,7 @@ N_PROBLEMS = 100    # validation 문제 수 (archive 점수 = 맞힌 문제 수)
 # 4주차 4b: prompt·SKILLS 교대는 "방금 accept된 자식 위에서 다른 부분을 고치는" 연쇄라 DGM 추첨이 끊는다.
 # LINEAGE_ROOT가 있으면 DGM 대신, 그 commit과 hook_changed에 LINEAGE_TAG가 든 round에서 accept된 자손 중 최고점을 고른다. ""이면 DGM.
 LINEAGE_ROOT = "c764ddb"   # 4주차 끝 champion (76)
-LINEAGE_TAG = "4b"
+LINEAGE_TAG = "4c"   # 4b(r145~164, [prompt]만)는 accept 0이라 같은 root에서 다시 시작
 
 
 def select_parent(archive: Archive) -> str:
@@ -68,9 +68,9 @@ if __name__ == "__main__":   # python -m hooks.select_parent : 가짜 archive로
     LINEAGE_ROOT = root   # 계보 확인: 4b round에서 accept된 root 자손 중 최고점, 다른 계보·다른 실험은 무시
     (d / "rounds.jsonl").write_text("\n".join(json.dumps(e) for e in [
         {"commit": "x1", "parent": root, "accepted": True, "hook_changed": "old"},      # 4b 아님
-        {"commit": "k1", "parent": root, "accepted": True, "hook_changed": "4b: ..."},
-        {"commit": "k2", "parent": "k1", "accepted": False, "hook_changed": "4b: ..."},  # 거부
-        {"commit": "k3", "parent": "zz", "accepted": True, "hook_changed": "4b: ..."}])) # 다른 계보
+        {"commit": "k1", "parent": root, "accepted": True, "hook_changed": "4c: ..."},
+        {"commit": "k2", "parent": "k1", "accepted": False, "hook_changed": "4c: ..."},  # 거부
+        {"commit": "k3", "parent": "zz", "accepted": True, "hook_changed": "4c: ..."}])) # 다른 계보
     b = _A(d, {root: 76, "x1": 90, "k1": 77, "k2": 95, "k3": 99}, {})
     assert select_parent(b) == "k1", select_parent(b)
     (d / "rounds.jsonl").write_text("")

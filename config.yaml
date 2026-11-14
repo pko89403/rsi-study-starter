@@ -13,9 +13,9 @@ improver_max_tokens: 4096   # Improver LLM 출력 상한(진단·patch). 7B 정�
 # 4주차부터 [prompt, code]로 바꾼다: Improver가 SQL agent의 노드 본문(select_schema·generate·fix)과 route도 고친다.
 #   실행 오류만 fix로 보내는 route patch는 바뀐 답이 적어 kernel 문턱이 낮다 (hooks/on_round_start.py의 target 선택이 이때부터 의미를 가진다).
 # 6주차에도 이 줄은 바꾸지 않는다. evaluator는 판정이 rules_v0라 열어도 효과가 없고, 자기 평가는 hooks/review_patch.py·after_screen.py에 넣는다.
-editable_blocks: [prompt]    # 4주차 4b (r145~): prompt 블록 안에서 SKILLS(홀수 round)와 나머지(짝수 round)를 번갈아 고친다. hooks/build_prompt.aspect
+editable_blocks: [prompt, code]    # 4주차 4c (r165~): AGENTS.md 4주차 기본값. prompt round 안에서는 SKILLS와 나머지를 번갈아 고친다 (hooks/build_prompt.aspect)
 evolve_files: [sql_agent/run.py]   # 블록이 들어 있는 파일
 log: logs/rounds.jsonl
-hook_changed: "4b: prompt 블록 안 SKILLS·SYSTEM_PROMPT 교대 (build_prompt.aspect, review_patch), select_parent 계보 champion (c764ddb)" # 이번 주에 바꾼 hook 이름 (결과 표용)
+hook_changed: "4c: [prompt, code], prompt 블록 안 SKILLS·SYSTEM_PROMPT 교대 (build_prompt.aspect, review_patch), select_parent 계보 champion (c764ddb)" # 이번 주에 바꾼 hook 이름 (결과 표용)
 meta_contexts: 60        # make meta-eval이 만드는 서로 다른 상황 수
 meta_min_parents: 3      # 서로 다른 parent가 이보다 적으면 판정 보류
