@@ -9,7 +9,7 @@ from __future__ import annotations
 import ast
 from loop.context import RoundContext
 from loop.patch import Patch
-from hooks.build_prompt import aspect, split_block
+from hooks.build_prompt import aspect, route_always_end, split_block
 
 # prompt 블록의 build_messages 결과의 system message에 발동한 rule을 붙인다
 APPLY = '''
@@ -45,7 +45,36 @@ def _join(core: str, skills_line: str | None) -> str:
     return core if not skills_line else f"{core}\n\n{skills_line}\n{APPLY}"
 
 
+def _defs(src: str) -> dict[str, str]:
+    """최상위 정의 이름 -> AST 덤프. 줄 번호·주석은 덤프에 들어가지 않으므로 주석만 바꾼 patch는 같게 나온다."""
+    out = {}
+    for n in ast.parse(src).body:
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            key = n.name
+        elif isinstance(n, ast.Assign) and len(n.targets) == 1 and isinstance(n.targets[0], ast.Name):
+            key = n.targets[0].id
+        elif isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name):
+            key = n.target.id
+        else:
+            key = ast.dump(n)
+        out[key] = ast.dump(n)
+    return out
+
+
+def dead_code_patch(old: str, new: str) -> bool:
+    """6주차: route가 늘 END인 채로 실행되지 않는 곳(fix, MAX_ATTEMPTS)만 바꾼 code patch인지. 그런 patch는 답을 하나도 바꾸지 못한다.
+    문법 오류는 guard가 이유를 남기도록 여기서 거르지 않는다 (False)."""
+    try:
+        a, b = _defs(old), _defs(new)
+    except SyntaxError:
+        return False
+    changed = {k for k in a.keys() | b.keys() if a.get(k) != b.get(k)}
+    return route_always_end(new) and changed <= {"fix", "MAX_ATTEMPTS"}
+
+
 def review_patch(ctx: RoundContext, patch: Patch) -> Patch | None:
+    if patch.block == "code":
+        return None if dead_code_patch(ctx.block, patch.content) else patch   # 평가 비용을 쓰기 전에 버린다 (rejected_by=review)
     if patch.block != "prompt":
         return patch
     try:
@@ -100,5 +129,18 @@ def build_messages(question: str, schema: str, fewshot: list[dict]) -> list[dict
     assert g["build_messages"]("how many?", "", [])[0]["content"] == "N\nUse COUNT(*)."
     assert review_patch(ctx(out.content, 2), Patch("prompt", out.content, "r")) is None       # prompt 부분이 같음 → 거부
     assert review_patch(ctx(base, 2), Patch("prompt", "SYSTEM_PROMPT = (", "r")) is None        # 문법 오류 → 거부
-    assert review_patch(ctx(base, 2), Patch("code", "x = 1", "r")).content == "x = 1"          # 다른 블록은 통과
+    assert review_patch(ctx(base, 2), Patch("code", "x = 1", "r")).content == "x = 1"          # route가 없는 code patch는 통과
+    # 6주차: route가 늘 END면 fix·MAX_ATTEMPTS만 바꾼 patch는 거부, route나 다른 노드를 바꾸면 통과
+    code = 'MAX_ATTEMPTS = 1\n\n\ndef generate(s):\n    return {}\n\n\ndef fix(s):\n    return {"sql": "a"}\n\n\ndef route(s):\n    """v0"""\n    return END'
+    assert route_always_end(code) and not route_always_end(code.replace("return END", 'return "fix" if s["x"] else END'))
+    assert not route_always_end(code.replace("    return END", '    if s["x"]:\n        return "fix"\n    return END'))
+    assert not route_always_end("def f(s):\n    return END") and not route_always_end("def route(s")
+    dead = code.replace('"a"', '"b"').replace("MAX_ATTEMPTS = 1", "MAX_ATTEMPTS = 3")
+    assert review_patch(ctx(code, 2), Patch("code", dead, "r")) is None                           # fix·MAX_ATTEMPTS만 바뀜
+    assert review_patch(ctx(code, 2), Patch("code", code + "\n# only a comment", "r")) is None     # 주석만 바뀜
+    live = dead.replace("return END", 'return "fix" if not s["result"]["ok"] else END')
+    assert review_patch(ctx(code, 2), Patch("code", live, "r")).content == live                    # route를 바꿈
+    gen = code.replace("return {}\n", 'return {"sql": "c"}\n', 1)
+    assert review_patch(ctx(code, 2), Patch("code", gen, "r")).content == gen                      # generate를 바꿈
+    assert review_patch(ctx(code, 2), Patch("code", "def route(s", "r")).content == "def route(s"   # 문법 오류는 guard에 맡김
     print("review_patch ok")

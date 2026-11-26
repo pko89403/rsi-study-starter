@@ -1,5 +1,5 @@
 rounds: 40
-week: 4                  # 주차 번호. 매주 참가자가 바꾼다 (결과 표·meta 판정이 주차별로 묶인다)
+week: 6                  # 주차 번호. 매주 참가자가 바꾼다 (결과 표·meta 판정이 주차별로 묶인다)
 validation: data/validation.json
 fewshot_pool: data/fewshot_pool.json
 tables: data/tables.json
@@ -16,6 +16,6 @@ improver_max_tokens: 4096   # Improver LLM 출력 상한(진단·patch). 7B 정�
 editable_blocks: [prompt, code]    # 4주차 4c (r165~): AGENTS.md 4주차 기본값. prompt round 안에서는 SKILLS와 나머지를 번갈아 고친다 (hooks/build_prompt.aspect)
 evolve_files: [sql_agent/run.py]   # 블록이 들어 있는 파일
 log: logs/rounds.jsonl
-hook_changed: "4c: [prompt, code], prompt 블록 안 SKILLS·SYSTEM_PROMPT 교대 (build_prompt.aspect, review_patch), select_parent 계보 champion (c764ddb)" # 이번 주에 바꾼 hook 이름 (결과 표용)
+hook_changed: "6c: diagnose = BinEval yes/no questions (실행 결과 3행 제공, SQL마다 Y/N 전부, 결과 오답 겨냥 질문). DIAGNOSE_MODE=holistic 대조군. code round reachability 규칙은 두 조건 공통. 4c 설정 유지" # 이번 주에 바꾼 hook 이름 (결과 표용)
 meta_contexts: 60        # make meta-eval이 만드는 서로 다른 상황 수
 meta_min_parents: 3      # 서로 다른 parent가 이보다 적으면 판정 보류

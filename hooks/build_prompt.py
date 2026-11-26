@@ -72,8 +72,25 @@ CONTRACTS = {
 - execute (outside the block) runs s["sql"] on this problem's database and sets s["result"] = {"ok": bool, "rows": [...], "error": str|None}.
   It does not know the gold answer.
 - ask(messages) -> str calls the LLM. Names available without import: END, ask, build_messages, extract_sql.
-- v0: select_schema returns {} (no change) and route always returns END (no retry). Keep the block under ~40 lines.""",
+- v0: select_schema returns {} (no change) and route always returns END (no retry). Keep the block under ~40 lines.
+- The graph does not read MAX_ATTEMPTS. It has an effect only if route checks it. Outside the block, fix runs at most 5 times per question.""",
 }
+
+# 6주차: route가 늘 END면 fix()는 실행되지 않는다. 4~6주차 code patch 대부분이 fix()만 고쳐 바뀐 답이 0개였다
+DEAD_FIX = """
+- NOW: route always returns END, so fix() never runs. A change to fix() or MAX_ATTEMPTS alone changes no answer.
+  To use fix, make route return "fix" when s["result"]["ok"] is False (for example, only for SQL that fails to run)."""
+
+
+def route_always_end(block: str) -> bool:
+    """code 블록의 마지막 route 정의가 END만 돌려주는지 (AST로만 읽고 실행하지 않는다). route가 없거나 문법 오류면 False."""
+    try:
+        body = ast.parse(block).body
+    except SyntaxError:
+        return False
+    fn = next((n for n in reversed(body) if isinstance(n, ast.FunctionDef) and n.name == "route"), None)
+    rets = [n for n in ast.walk(fn) if isinstance(n, ast.Return)] if fn else []
+    return bool(rets) and all(isinstance(r.value, ast.Name) and r.value.id == "END" for r in rets)
 
 
 # 4주차 4b: prompt 블록 하나 안에서 SKILLS와 나머지(SYSTEM_PROMPT·FEWSHOT_IDS·build_messages)를 round마다 번갈아 고친다.
@@ -131,6 +148,8 @@ def build_prompt(ctx: RoundContext) -> list[dict]:
     b = ctx.block_name
     a = aspect(ctx)
     contract = CONTRACTS["skills"] if a == "skills" else CONTRACTS.get(b, f"Block {b!r}")
+    if b == "code" and route_always_end(ctx.block):
+        contract += DEAD_FIX
     shown = ctx.block
     if b == "prompt" and ALTERNATE:
         try:
